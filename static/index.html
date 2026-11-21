@@ -172,7 +172,7 @@
         <button id="btn-dl-memo" class="btn" disabled>Download .txt</button>
         <button id="btn-ics" class="btn">Add to calendar (.ics)</button>
       </div>
-      <pre id="memo" class="memo hidden"></pre>
+      <div id="memo" class="memo hidden" aria-live="polite"></div>
       <div id="memo-check" class="small"></div>
 
       <div id="rooming-wrap">
@@ -201,6 +201,36 @@
       <h1>Settings</h1>
       <button id="btn-reset-settings" class="btn">Reset to defaults</button>
     </div>
+    <!-- Feature 8: schedule import. Kept outside #settings-box so its inputs don't re-run the season plan. -->
+    <section class="set-group sched" id="schedule-box" aria-labelledby="sched-h">
+      <h2 id="sched-h">Schedule</h2>
+      <p class="small muted" id="sched-status"></p>
+      <p class="warn hidden" id="sched-warning"></p>
+      <label for="sched-text">Paste the road schedule <span class="muted">(text from a web page or email, up to 5,000 characters)</span></label>
+      <textarea id="sched-text" rows="5" maxlength="5000" placeholder="Wed, Sep 8, 2027  at Maple Ridge College  Maple Ridge Soccer Complex, Maple Ridge  7:00 PM"></textarea>
+      <div class="sched-actions">
+        <button id="btn-sched-read" class="btn">Read with Aivana</button>
+        <span class="muted small hidden" id="sched-or">or</span>
+        <label class="btn sched-upload hidden" id="sched-upload">Upload a screenshot
+          <input type="file" id="sched-file" accept="image/png,image/jpeg" class="visually-hidden"></label>
+        <span class="muted small hidden" id="sched-upload-hint">PNG or JPG, up to 5 MB. No PDFs.</span>
+        <button id="btn-sched-reset" class="btn link hidden" type="button">Reset to sample schedule</button>
+      </div>
+      <p class="err small hidden" id="sched-msg" role="alert"></p>
+      <div id="sched-preview" class="hidden">
+        <h3>Check the games</h3>
+        <p class="small muted">Nothing is saved yet. Fix every red cell, then save. Miles and drive hours are filled in only when
+          the schedule shows them for that game (like "56 mi, 1.2 hrs"). They're never estimated, so type in any that are
+          empty. Home games are shown but not saved.</p>
+        <div id="sched-notes"></div>
+        <div class="table-wrap"><table class="tbl sched-tbl" id="sched-table"></table></div>
+        <p class="small" id="sched-summary" aria-live="polite"></p>
+        <div class="acks"><label><input type="checkbox" id="sched-confirm"> This replaces the current schedule. Saved trip
+          plans for removed games will no longer open.</label></div>
+        <button id="btn-sched-save" class="btn primary" disabled>Save schedule</button>
+        <button id="btn-sched-cancel" class="btn link" type="button">Discard</button>
+      </div>
+    </section>
     <div id="settings-box">
       <section class="set-group"><h2>Team rules</h2><p class="small muted">Every option is checked against these. Set how much each one matters.</p><div class="set-rows" id="grp-rules"></div></section>
       <section class="set-group"><h2>Travel policy (examples)</h2><p class="small muted">These are example values, not BGSU's current policy. Confirm each with BGSU Travel Services.</p><div class="set-rows" id="grp-policy"></div></section>

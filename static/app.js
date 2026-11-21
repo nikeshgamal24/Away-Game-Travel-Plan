@@ -64,6 +64,10 @@ const TAB_KEY = "bgsu-away-game-planner:tab";
 const state = { req: null, overrides: {}, defaults: {}, groups: {}, roles: [], plan: null, selected: null, custom: null,
   rec: null, history: [], changeLog: [], approval: null, voidReason: null, details: null, memo: "", step: 1 };
 const ctx = () => ({ request: state.req, settings: state.overrides, custom: state.custom });
+// Feature 8: the schedule can change (import/reset), and imported games reuse IDs like G01. A saved trip remembers
+// which game it was for (opponent, date, kickoff), so a reload never opens it against a different or missing game.
+let GAMES = [];
+const gameSig = (id) => { const g = GAMES.find((x) => x.game_id === id); return g ? `${g.opponent}|${g.date}|${g.kickoff}` : null; };
 const snapshot = () => clone({ req: state.req, overrides: state.overrides, custom: state.custom, selected: state.selected });
 
 // ------------------------------------------------------------------ saving (this browser only)
@@ -71,7 +75,8 @@ function save() {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify({ form: readForm(), text: $("freetext").value, settings: readSettings(),
       req: state.req, overrides: state.overrides, selected: state.selected, custom: state.custom, history: state.history,
-      chat: $("chat-log").innerHTML, changeLog: state.changeLog, approval: state.approval, savedAt: new Date().toISOString() }));
+      chat: $("chat-log").innerHTML, changeLog: state.changeLog, approval: state.approval, savedAt: new Date().toISOString(),
+      game: gameSig(state.req?.game_id || readForm().game_id) }));
   } catch { /* storage unavailable: app still works */ }
 }
 function loadSaved() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || "null"); } catch { return null; } }
@@ -81,7 +86,7 @@ function clearSaved() { try { localStorage.removeItem(STORE_KEY); } catch { /* i
 const AI_LABELS = { "/api/parse": "Aivana is reading the request", "/api/recommend": "Aivana is comparing the options",
   "/api/whatif": "Aivana is working on your message", "/api/season/explain": "Aivana is explaining the season plan",
   "/api/memo": "Aivana is writing the memo", "/api/hotels/search": "Aivana is searching the web for hotels",
-  "/api/hotels/recommend": "Aivana is comparing the hotels" };
+  "/api/hotels/recommend": "Aivana is comparing the hotels", "/api/schedule/read": "Aivana is reading the schedule" };
 const ai = { jobs: [], timer: null };
 function aiStart(path) {
   const job = { label: AI_LABELS[path], t0: Date.now() };
@@ -795,7 +800,7 @@ const approved = () => ({ ...ctx(), option_id: state.selected, approval_id: stat
 async function writeMemo() {
   const btn = $("btn-memo"), box = $("memo");
   busy(btn, true, "Writing…");
-  setPdfButton(null); box.textContent = ""; box.classList.remove("hidden"); $("memo-check").innerHTML = thinking("Aivana is writing the memo…");
+  setPdfButton(null); box.textContent = ""; box.classList.remove("hidden", "formatted"); $("memo-check").innerHTML = thinking("Aivana is writing the memo…");
   const done = aiStart("/api/memo");
   try {
     const res = await fetch("/api/memo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(approved()) });
@@ -808,7 +813,9 @@ async function writeMemo() {
       box.scrollTop = 1e9;
     }
     done();
-    state.memo = box.textContent;
+    // Section headings instead of "- Overview: …" on every line (static/memoFormat.js, the same layout as the PDF).
+    state.memo = memoFmt ? memoFmt.tidyMemo(box.textContent) : box.textContent;
+    if (memoFmt) { box.innerHTML = memoFmt.memoHtml(state.memo); box.classList.add("formatted"); }
     $("btn-dl-memo").disabled = false;
     $("memo-check").innerHTML = thinking("Checking every number…");
     const chk = await api("/api/check", { ...ctx(), text: state.memo });
@@ -890,15 +897,167 @@ function renderSettings() {
   }
 }
 
+// ------------------------------------------------------------------ schedule import (Feature 8)
+// Aivana reads pasted text (or, in stage B, a screenshot) into rows. The same rules as the server
+// (static/scheduleRules.js) mark missing or unclear values red. Staff fix them; only then can they save.
+let rules = null;              // static/scheduleRules.js, loaded at boot
+let memoFmt = null;            // static/memoFormat.js, loaded at boot (memo headings, shared with the PDF)
+const sched = { rows: [], info: null };
+const SCHED_COLS = [
+  ["home_away", "Home / away"], ["opponent", "Opponent", "w-txt"], ["city", "City", "w-city"], ["stadium", "Stadium", "w-txt"],
+  ["year", "Year", "w-sm"], ["month", "Month", "w-sm"], ["day", "Day", "w-sm"], ["kickoff", "Kickoff (24h)", "w-num"],
+  ["miles", "Miles from campus", "w-num"], ["drive_hours", "Drive hours", "w-num"],
+];
+
+function schedStatus(info) {
+  sched.info = info;
+  $("sched-status").textContent = info.source === "imported"
+    ? `Using an imported schedule (${info.games} away game${info.games === 1 ? "" : "s"}). The sample is kept and can be restored.`
+    : `Using the sample schedule (${info.games} fictional away games). Import your own below.`;
+  $("sched-warning").textContent = info.warning || "";
+  $("sched-warning").classList.toggle("hidden", !info.warning);
+  $("btn-sched-reset").classList.toggle("hidden", info.source !== "imported");
+}
+
+function schedMsg(text) {
+  $("sched-msg").textContent = text || "";
+  $("sched-msg").classList.toggle("hidden", !text);
+}
+
+/** Show an API error next to the schedule box instead of the banner at the top. */
+function schedApiError(e) {
+  showError("");
+  const d = e?.data || {};
+  schedMsg([d.error || e?.message || "Something went wrong.", ...(d.errors || [])].join(" "));
+}
+
+function schedCell(i, f, extra) {
+  const v = sched.rows[i][f];
+  const id = `sc-${i}-${f}`;
+  const label = `Row ${i + 1} ${SCHED_COLS.find((c) => c[0] === f)[1]}`;
+  if (f === "home_away") {
+    const opts = [["unclear", "Pick…"], ["away", "Away"], ["home", "Home"], ["neutral", "Neutral site"]];
+    return `<td id="${id}"><select data-i="${i}" data-f="${f}" aria-label="${esc(label)}">${opts.map(([k, t]) =>
+      `<option value="${k}"${v === k ? " selected" : ""}>${t}</option>`).join("")}</select><span class="why"></span></td>`;
+  }
+  const num = ["year", "month", "day", "miles", "drive_hours"].includes(f);
+  const ph = f === "kickoff" ? ' placeholder="19:00"' : "";
+  return `<td id="${id}" class="${extra || ""}"><input data-i="${i}" data-f="${f}" aria-label="${esc(label)}"` +
+    `${num ? ` type="number" inputmode="decimal" step="any" min="0"` : ' type="text" maxlength="80"'}${ph} value="${esc(v ?? "")}">` +
+    `<span class="why"></span></td>`;
+}
+
+function renderSchedPreview(notes, mock) {
+  $("sched-notes").innerHTML = [
+    ...(mock ? ["Offline mock: these are the sample's games, not your schedule. Set AIVANA_API_KEY to read a real one."] : []),
+    ...notes].map((n) => `<p class="note">${esc(n)}</p>`).join("");
+  $("sched-table").innerHTML = `<tr>${SCHED_COLS.map(([, t]) => `<th>${esc(t)}</th>`).join("")}<th>As printed</th></tr>` +
+    sched.rows.map((r, i) => `<tr id="sr-${i}">${SCHED_COLS.map(([f, , cls]) => schedCell(i, f, cls)).join("")}` +
+      `<td class="printed">${esc(r.as_printed || "")}</td></tr>`).join("");
+  $("sched-confirm").checked = false;
+  $("sched-preview").classList.remove("hidden");
+  checkSched();
+}
+
+/** Re-run the shared rules on every row and paint each cell. Cheap: at most 20 rows. */
+function checkSched() {
+  const checks = rules.checkRows(sched.rows);
+  let bad = 0, keep = 0;
+  checks.forEach((c, i) => {
+    $(`sr-${i}`).classList.toggle("home", c.skipped);
+    if (!c.skipped) keep += 1;
+    for (const [f] of SCHED_COLS) {
+      const why = c.problems[f] || "";
+      const td = $(`sc-${i}-${f}`);
+      td.classList.toggle("bad", !!why);
+      td.querySelector(".why").textContent = why;
+      td.querySelector("input, select").setAttribute("aria-invalid", String(!!why));
+      if (why) bad += 1;
+    }
+    if (c.skipped) $(`sc-${i}-home_away`).querySelector(".why").textContent = "Home game: not saved.";
+  });
+  $("sched-summary").innerHTML = bad
+    ? `<span class="err">${bad} cell${bad === 1 ? "" : "s"} to fix.</span> ${keep} away game${keep === 1 ? "" : "s"} will be saved.`
+    : keep ? `<span class="ok-text">All rows look right.</span> ${keep} away game${keep === 1 ? "" : "s"} will be saved.`
+      : '<span class="err">There are no away games to save.</span>';
+  $("btn-sched-save").disabled = !!bad || !keep || !$("sched-confirm").checked;
+}
+
+function onSchedEdit(e) {
+  const el = e.target.closest("[data-f]");
+  if (!el) return;
+  const row = sched.rows[Number(el.dataset.i)], f = el.dataset.f;
+  row[f] = el.value === "" ? null : el.value;
+  row.unclear = (row.unclear || []).filter((x) => x !== f); // a value staff typed is never "hard to read" again
+  checkSched();
+}
+
+async function readSchedText() {
+  const btn = $("btn-sched-read");
+  schedMsg("");
+  const text = $("sched-text").value.trim();
+  if (text.length < 10) { schedMsg("Paste the schedule (at least one game) first, or upload a screenshot."); return; }
+  busy(btn, true, "Reading…");
+  try { showSchedResult(await api("/api/schedule/read", { text })); }
+  catch (e) { schedApiError(e); } finally { busy(btn, false); }
+}
+
+function showSchedResult(out) {
+  sched.rows = out.rows.map((r) => ({ ...r, unclear: [...(r.unclear || [])] }));
+  renderSchedPreview(out.notes || [], out.mock);
+  $("sched-preview").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function closeSchedPreview() {
+  sched.rows = [];
+  $("sched-preview").classList.add("hidden");
+  $("sched-table").innerHTML = "";
+}
+
+/** After a save or reset: new game list for the trip form and the season plan. */
+async function refreshGames() {
+  const b = await (await fetch("/api/bootstrap")).json();
+  GAMES = b.games;
+  $("f-game").innerHTML = '<option value="">Choose a game…</option>' + b.games.map((g) => `<option value="${g.game_id}">${esc(g.label)}</option>`).join("");
+  schedStatus(b.schedule);
+  loadSeason();
+}
+
+async function saveSched() {
+  const btn = $("btn-sched-save");
+  schedMsg("");
+  busy(btn, true, "Saving…");
+  try {
+    const rows = sched.rows.map(({ as_printed, ...r }) => r); // as_printed is preview-only, never sent to be saved
+    const out = await api("/api/schedule/save", { rows, confirm: $("sched-confirm").checked });
+    closeSchedPreview();
+    $("sched-text").value = "";
+    await refreshGames();
+    schedMsg("");
+    $("sched-status").textContent += ` Saved ${out.saved} game${out.saved === 1 ? "" : "s"}` +
+      `${out.skipped_home ? ` (${out.skipped_home} home game${out.skipped_home === 1 ? "" : "s"} left out)` : ""}.`;
+  } catch (e) { schedApiError(e); } finally { busy(btn, false); if (sched.rows.length) checkSched(); } // busy() re-enables Save
+}
+
+async function resetSched() {
+  if (!confirm("Go back to the sample schedule? The imported schedule will be deleted.")) return;
+  try { await api("/api/schedule/reset", {}); closeSchedPreview(); await refreshGames(); schedMsg(""); }
+  catch (e) { schedApiError(e); }
+}
+
 // ------------------------------------------------------------------ boot
 async function boot() {
   const b = await (await fetch("/api/bootstrap")).json();
+  GAMES = b.games;
   if (b.mock) $("mode-badge").classList.remove("hidden");
   $("f-game").innerHTML = '<option value="">Choose a game…</option>' + b.games.map((g) => `<option value="${g.game_id}">${esc(g.label)}</option>`).join("");
   state.defaults = b.settings; state.groups = b.setting_groups; state.roles = b.approver_roles;
   $("approve-role").innerHTML = '<option value="">Choose role…</option>' + state.roles.map((r) => `<option>${esc(r)}</option>`).join("");
   renderSettings();
   fillSettings({});
+  try { rules = await import("/static/scheduleRules.js"); } catch { rules = null; }
+  try { memoFmt = await import("/static/memoFormat.js"); } catch { memoFmt = null; }
+  if (rules && b.schedule) schedStatus(b.schedule); else $("schedule-box").classList.add("hidden");
 
   document.querySelectorAll(".tabs [data-tab]").forEach((t) => t.addEventListener("click", () => showTab(t.dataset.tab)));
   document.querySelectorAll("[data-goto-tab]").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); showTab(a.dataset.gotoTab); }));
@@ -929,6 +1088,13 @@ async function boot() {
   $("btn-web-search").addEventListener("click", searchWebHotels);
   $("btn-which-hotel").addEventListener("click", whichHotel);
   $("btn-actuals").addEventListener("click", compareActuals);
+  $("btn-sched-read").addEventListener("click", readSchedText);
+  $("sched-table").addEventListener("input", onSchedEdit);
+  $("sched-table").addEventListener("change", onSchedEdit);
+  $("sched-confirm").addEventListener("change", checkSched);
+  $("btn-sched-save").addEventListener("click", saveSched);
+  $("btn-sched-cancel").addEventListener("click", () => { closeSchedPreview(); schedMsg(""); });
+  $("btn-sched-reset").addEventListener("click", resetSched);
   document.querySelectorAll(".form input, .form select").forEach((e) => e.addEventListener("input", () => e.classList.remove("missing", "assumed")));
   renderChangeLog();
 
@@ -937,7 +1103,17 @@ async function boot() {
   showTab(["season", "plan", "settings"].includes(tab) ? tab : "season");
   refreshUsage(); goStep(1); loadSeason();
 
-  const saved = loadSaved();
+  let saved = loadSaved();
+  const savedGame = saved && (saved.req?.game_id || saved.form?.game_id);
+  if (savedGame && (!gameSig(savedGame) || (saved.game && saved.game !== gameSig(savedGame)))) {
+    // The trip was for a game that's no longer on the schedule (or its ID is now a different game): keep the
+    // settings, drop the trip, and say so quietly instead of failing to rebuild it.
+    fillSettings(saved.settings || {});
+    clearSaved();
+    saved = null;
+    $("restored").textContent = "Your last trip was for a game that's no longer on the schedule, so it was cleared.";
+    $("restored").classList.remove("hidden");
+  }
   if (saved) {
     $("freetext").value = saved.text || "";
     fillForm(saved.form || {}); fillSettings(saved.settings || {});

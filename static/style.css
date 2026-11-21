@@ -83,6 +83,10 @@ input.assumed, select.assumed { border-color: var(--warn); background: var(--war
 .btn.link { background: none; border-color: transparent; text-decoration: underline; padding-left: 6px; padding-right: 6px; }
 .grid.form { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px 14px; margin: 16px 0; }
 .grid.form .wide { grid-column: span 2; }
+/* Inputs line up across a row even when a label wraps to two lines: each label fills the row's height and its
+   input sits at the bottom. Text boxes and dropdowns share one height. */
+.grid.form > label { justify-content: space-between; }
+.grid.form input:not([type="checkbox"]):not([type="radio"]), .grid.form select { height: 40px; box-sizing: border-box; }
 .btn { font: 600 15px var(--font); padding: 8px 16px; border-radius: 8px; border: 1px solid var(--line-2); background: #fff;
   color: var(--ink); cursor: pointer; }
 .btn:hover { border-color: var(--brown-2); }
@@ -214,6 +218,12 @@ details[open] > summary::before { transform: rotate(90deg); }
 .voided { padding: 10px 12px; border-radius: 8px; background: var(--bad-bg); color: var(--bad); margin-bottom: 10px; }
 .memo { white-space: pre-wrap; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 14px;
   font: 15px/1.55 var(--font); max-height: 460px; overflow: auto; }
+.memo.formatted { white-space: normal; }
+.memo.formatted h4 { font: 700 15px var(--font); color: var(--brown); margin: 14px 0 4px; }
+.memo.formatted .memo-lead { font-weight: 700; margin: 0 0 6px; }
+.memo.formatted p { margin: 6px 0; }
+.memo.formatted ul { margin: 0; padding-left: 20px; }
+.memo.formatted li { margin: 2px 0; }
 .rooming { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 18px; font-size: 14px; }
 .bench table { border-collapse: collapse; font-size: 14px; width: 100%; }
 .bench td, .bench th { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
@@ -229,6 +239,32 @@ details[open] > summary::before { transform: rotate(90deg); }
 .set-row .name { font-weight: 500; }
 .set-row select, .set-row input { width: 100%; }
 .set-row .prio-label { display: none; }
+
+/* ------------------------------------------------ schedule import (Feature 8) */
+.sched { padding-top: 0; border-top: 0; }
+.sched + #settings-box > .set-group:first-child { border-top: 1px solid var(--line); padding-top: 18px; }
+.sched label[for="sched-text"] { display: block; margin: 8px 0 4px; }
+.sched-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 10px 0; }
+.sched-upload { display: inline-flex; flex-direction: row; color: var(--ink); font-size: 15px; font-weight: 600; }
+.sched-upload:focus-within { outline: 3px solid var(--orange); outline-offset: 2px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0; }
+#btn-sched-reset { margin-left: auto; }
+.sched-tbl { font-size: 14px; min-width: 1360px; }
+.sched-tbl select { min-width: 112px; }
+.sched-tbl .w-txt input { min-width: 170px; }
+.sched-tbl .w-city input { min-width: 120px; }
+.sched-tbl td { padding: 6px 4px; }
+.sched-tbl input, .sched-tbl select { width: 100%; font-size: 15px; padding: 6px 7px; }
+.sched-tbl .w-num input { width: 76px; }
+.sched-tbl .w-sm input { width: 64px; }
+.sched-tbl .bad input, .sched-tbl .bad select { border-color: var(--bad); background: var(--bad-bg); }
+.sched-tbl .why { display: block; color: var(--bad); font-size: 12px; line-height: 1.3; margin-top: 3px; }
+.sched-tbl tr.home td { color: var(--muted); background: #fafafa; }
+.sched-tbl tr.home input { opacity: .55; }
+.sched-tbl .printed { min-width: 200px; max-width: 260px; color: var(--muted); font-size: 13px; }
+#sched-preview { margin-top: 8px; }
+#sched-preview h3 { margin-top: 12px; }
 
 /* ------------------------------------------------ chat drawer */
 .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 100%); z-index: 40; display: flex; flex-direction: column;

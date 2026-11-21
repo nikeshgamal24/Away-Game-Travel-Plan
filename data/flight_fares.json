@@ -8,7 +8,8 @@
    "flight_hours": 1.6,
    "airport_buffer_hours": 2.0,
    "transfer_hours": 0.7,
-   "local_bus_per_day": 650
+   "local_bus_per_day": 650,
+   "opponent": "Harbor City Tech"
   }
  ]
 }

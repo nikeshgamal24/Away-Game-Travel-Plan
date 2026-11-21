@@ -139,7 +139,7 @@ export function jsonFromText(text) {
  * `validate` runs our own checks on top of Aivana's schema validation; if it
  * throws InvalidAnswer we retry once with the problem stated, then give up. */
 export async function structured({ system, messages, schema, maxTokens = 600, kind = "other", mock = null, validate = null,
-  webSearch = false, onRaw = null }) {
+  webSearch = false, onRaw = null, attachments = null }) {
   if (mockMode()) {
     track(null, kind);
     const out = mock ? mock() : {};
@@ -153,6 +153,8 @@ export async function structured({ system, messages, schema, maxTokens = 600, ki
     max_tokens: maxTokens,
     effort: "low",
     ...(webSearch ? webSearchOptions() : {}),
+    // Feature 8: files go in a top-level array, [{ mime_type, data (raw base64) }] (developers.aivana.ai/docs/files-documents).
+    ...(attachments?.length ? { attachments } : {}),
   };
   for (let attempt = 0; attempt < 2; attempt++) {
     let data;
@@ -161,7 +163,10 @@ export async function structured({ system, messages, schema, maxTokens = 600, ki
     } catch (e) {
       // TODO confirm: the docs don't say whether web_search works with response_format. If Aivana refuses
       // the pair, ask for the same JSON in plain text instead (validated by our code just the same).
-      if (!(webSearch && e instanceof AivanaError && [400, 422].includes(e.status) && body.response_format)) throw e;
+      // Feature 8: attachments + response_format worked together in a live run (docs/evidence/schedule-image-*.md).
+      // The fallback stays in case a workspace or model refuses the pair.
+      if (!((webSearch || attachments?.length) && e instanceof AivanaError && [400, 422].includes(e.status) &&
+        body.response_format)) throw e;
       const { response_format: _, ...rest } = body;
       body = { ...rest, system: `${system}\n\nReply with only a JSON object that matches this JSON Schema, and nothing else:\n` +
         JSON.stringify(schema) };

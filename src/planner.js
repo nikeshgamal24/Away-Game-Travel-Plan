@@ -138,6 +138,10 @@ export function mergeSettings(defaults, overrides) {
 export const getGame = (data, id) => data.schedule.games.find((x) => x.game_id === id) || null;
 export const homeName = (data) => data.schedule.home?.short ?? "home campus";
 export const kickoffDT = (game) => parseDT(`${game.date}T${game.kickoff}`);
+/** The group fare for a game. A fare names its opponent too, so an imported schedule that reuses an ID (G09)
+ * for a different game never picks up another game's fare (Feature 8). */
+export const findFare = (data, game) => data.flight_fares.fares.find((f) => f.game_id === game.game_id &&
+  (!f.opponent || f.opponent === game.opponent)) || undefined;
 export const activePlayerCount = (data) => data.roster.players.filter((p) => p.status === "active").length;
 
 /** 7.5 -> '7:30 AM', 24 -> 'midnight', 26 -> '2:00 AM (next day)'. */
@@ -535,7 +539,7 @@ export function buildOvernight(req, data, s, game, c, hotel, optionId, name,
     pkg.timeline.push({ time: fmtT(depart), label: busLabel(data, c, bus) });
     modeLabel = "bus";
   } else {
-    const fare = data.flight_fares.fares.find((f) => f.game_id === game.game_id);
+    const fare = findFare(data, game);
     const localBus = fare.local_bus_per_day * (nights + 1) * c.buses;
     transport = round(fare.fare_per_seat * c.travelers + localBus, 2);
     pkg.flight = { carrier: fare.carrier, fare_per_seat: fare.fare_per_seat, flight_hours: fare.flight_hours,
@@ -725,7 +729,7 @@ export function buildPackages(req, data, s, custom = null) {
       packages.push(buildOvernight(req, data, s, game, c, h, "E", `Bus + 2 nights at ${h.name} (stay after the game)`,
         { mealChoice: mealsFor("E"), stayAfter: true }));
     }
-    const fare = data.flight_fares.fares.find((f) => f.game_id === game.game_id);
+    const fare = findFare(data, game);
     if (game.miles >= s.flight_min_miles && fare) {
       [h] = hotelFor("D", value);
       packages.push(buildOvernight(req, data, s, game, c, h, "D", `Flight (group fare) + overnight at ${h.name}`,

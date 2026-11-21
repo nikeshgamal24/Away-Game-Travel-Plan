@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 
 process.env.AIVANA_MOCK = "1";
+process.env.SCHEDULE_IMPORTED_FILE = join(tmpdir(), `schedule-imported-none-${process.pid}.json`); // never a local import
 process.env.APPROVALS_FILE = join(tmpdir(), `approvals-web-${process.pid}.json`);
 process.env.WEB_CACHE_DIR = mkdtempSync(join(tmpdir(), "web-cache-"));
 

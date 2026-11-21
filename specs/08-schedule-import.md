@@ -1,5 +1,22 @@
 # Feature 8: Import the schedule from text or a screenshot
 
+**Status:** Step 0 and Stage A done. Stage B (image upload, PDF refusal) is next. 160 tests pass.
+
+Found while building:
+- **Step 0 (live check):** `attachments` + `response_format` **work together**. Aivana read all 5 rows of the synthetic
+  image, gave `year: null` where no year was printed and `"TBA"` for the TBA kickoff, and guessed nothing. It reported
+  946 input tokens. Evidence: `docs/evidence/schedule-image-2026-11-21.md`.
+- This workspace caps `max_tokens` at **2048**, so the import asks for 2000.
+- The approval fingerprint now includes the game's date, kickoff, place and distance. The old fingerprint only had
+  the game ID, so a moved kickoff wouldn't have made an approval out of date. Approvals saved before this change
+  now show as out of date once.
+- Flight fares are matched by game ID **and** opponent, so an imported game that gets ID G09 never picks up Harbor
+  City Tech's fare.
+- Miles and drive hours were added to the schema later (they can be shown on a schedule). The step 0 run used the
+  schema without them.
+- If Aivana's answer has personal details, the message says what was found and that nothing was kept, instead of
+  the "before sending this to Aivana" wording (the image was already sent).
+
 ## The problem
 Staff get the road schedule as a web page, an email or a screenshot. Today someone types every game into
 `data/schedule.json` by hand. That's slow, and a wrong date or kickoff breaks every plan for that game.
@@ -29,7 +46,8 @@ Nothing reaches the schedule until staff save it. The sample schedule (`data/sch
 ## 1. The schema (shared by text and image)
 Aivana returns `{ games: [...], notes: [] }`, with at most 20 games. Each game has:
 `opponent, home_away (away/home/neutral/unclear), city, stadium, year (int or null), month (1–12 or null),
-day (1–31 or null), kickoff (HH:MM 24h, "TBA", or null), as_printed (the row's text exactly as shown), unclear[]`
+day (1–31 or null), kickoff (HH:MM 24h, "TBA", or null), miles (number or null), drive_hours (number or null),
+as_printed (the row's text exactly as shown), unclear[]`
 (the names of fields Aivana wasn't sure about).
 
 - The prompt says to copy only what is shown, **never guess a year**, and use null plus `unclear` when a value is
@@ -37,7 +55,10 @@ day (1–31 or null), kickoff (HH:MM 24h, "TBA", or null), as_printed (the row's
 - **Code**, not Aivana, builds `date` from year, month and day, and checks that the date is real.
 - `as_printed` is **shown in the preview only**, so staff can compare. It is **never saved**.
 - Home games are shown greyed out and are not saved. The planner is for away games only.
-- `miles` and `drive_hours` are never on a schedule, so staff type them in the preview (both are required).
+- `miles` and `drive_hours` are copied **only if the text or image shows them for that game** (e.g. "56 mi",
+  "1.2 hrs"); otherwise null. **Never estimated.** Code checks both are > 0. For pasted text, the code also keeps a
+  value only if that number appears in the text with its unit, and says so in a note when it empties one. Empty values
+  stay red "Required." for staff to type (both are required to save).
 
 ### Personal-details check on the answer
 The code runs `personalDetails()` on **every string Aivana returns** (every field, `as_printed`, `notes`), for text
@@ -113,32 +134,32 @@ value staff typed is never marked unclear again.
 
 ## How we will test it
 **Step 0**
-1. One live Aivana call with the synthetic PNG (`test/fixtures/schedule-synthetic.png`), saved to
-   `docs/evidence/schedule-image-<date>.md`: the request **without the base64**, the response, and the tokens
-   Aivana reports. No API key. This answers the TODO about `attachments` plus `response_format`.
+12. One live Aivana call with the synthetic PNG (`test/fixtures/schedule-synthetic.png`), saved to
+    `docs/evidence/schedule-image-<date>.md`: the request **without the base64**, the response, and the tokens
+    Aivana reports. No API key. This answers the TODO about `attachments` plus `response_format`.
 
 **Stage A**
-2. A game with `year: null` → invalid with "Year not shown". Feb 30 → "Date unclear". A field in `unclear` → invalid.
-3. Save with any invalid row → 400. A valid save → `data/schedule.imported.json` with IDs G01…Gn in date order, home
+5. A game with `year: null` → invalid with "Year not shown". Feb 30 → "Date unclear". A field in `unclear` → invalid.
+7. Save with any invalid row → 400. A valid save → `data/schedule.imported.json` with IDs G01…Gn in date order, home
    games dropped, no `as_printed`. `data/schedule.json` is unchanged.
-4. Changing a game's kickoff after approval → that approval is out of date (409).
-5. Mock mode: the import works offline and shows the one invalid row.
-6. An Aivana answer with a phone number or email in any field (including `as_printed` or `notes`) → refused with
-   `PERSONAL_MESSAGE`, and nothing is cached.
-7. Startup loads the imported file if present, else the sample. A broken imported file → the sample plus a warning.
-8. Reset deletes the imported file and the sample is back in use. Reset with no imported file → no error.
-9. All existing tests still pass.
+8. Changing a game's kickoff after approval → that approval is out of date (409).
+10. Mock mode: the import works offline and shows the one invalid row.
+14. An Aivana answer with a phone number or email in any field (including `as_printed` or `notes`) → refused with
+    `PERSONAL_MESSAGE`, and nothing is cached.
+15. Startup loads the imported file if present, else the sample. A broken imported file → the sample plus a warning.
+16. Reset deletes the imported file and the sample is back in use. Reset with no imported file → no error.
+13. All existing tests still pass.
 
 **Stage B**
-10. A PDF (by type, by name, and a renamed `.png` starting with `%PDF`) → the exact PDF message, and **no Aivana call**
-    (the fake transport records zero calls).
-11. HEIC/GIF → "Upload a PNG or JPG screenshot." A file over 5 MB → refused in the browser.
-12. An image over 1600px wide reaching the server → refused. A 1600px one → accepted. A body over 3 MB → 413.
-13. The request to Aivana has exactly one `attachments` item, `mime_type` `image/png` or `image/jpeg`, plus
-    `response_format` with the schedule schema.
-14. Text and image answers go through the same validator and personal-details check (same fixture → same preview rows).
-15. The same image twice → one Aivana call (cache by hash). The image bytes aren't in any file on disk.
-16. Browser check (laptop and phone): upload, downscale, fix the red cells, save, reset.
+1. A PDF (by type, by name, and a renamed `.png` starting with `%PDF`) → the exact PDF message, and **no Aivana call**
+   (the fake transport records zero calls).
+2. HEIC/GIF → "Upload a PNG or JPG screenshot." A file over 5 MB → refused in the browser.
+3. An image over 1600px wide reaching the server → refused. A 1600px one → accepted. A body over 3 MB → 413.
+4. The request to Aivana has exactly one `attachments` item, `mime_type` `image/png` or `image/jpeg`, plus
+   `response_format` with the schedule schema.
+6. Text and image answers go through the same validator and personal-details check (same fixture → same preview rows).
+9. The same image twice → one Aivana call (cache by hash). The image bytes aren't in any file on disk.
+11. Browser check (laptop and phone): upload, downscale, fix the red cells, save, reset.
 
 All images in tests and evidence are synthetic.
 

@@ -170,12 +170,13 @@ export function makePdf(doc) {
 }
 
 // ------------------------------------------------------------------ the trip memo
+import { tidyMemo } from "../static/memoFormat.js";
 const usd = (x) => (x < 0 ? "-$" : "$") + Math.abs(x).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
 /** Aivana's plain-text memo -> PDF blocks. Dashed lines become bullets; short label lines become headings. */
 export function memoBlocks(text) {
   const blocks = [];
-  const lines = String(text).replace(/\r/g, "").split("\n");
+  const lines = tidyMemo(text).split("\n"); // "- Overview: x" lines become an "Overview" heading + "- x"
   lines.forEach((raw, i) => {
     let line = raw.trim().replace(/\*\*(.+?)\*\*/g, "$1").replace(/__(.+?)__/g, "$1");
     if (!line) { blocks.push({ type: "space", h: 5 }); return; }

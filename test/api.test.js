@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 process.env.AIVANA_MOCK = "1";
+process.env.SCHEDULE_IMPORTED_FILE = join(tmpdir(), `schedule-imported-none-${process.pid}.json`); // never a local import
 process.env.APPROVALS_FILE = join(tmpdir(), `approvals-test-${process.pid}.json`); // keep test approvals out of the app
 
 const { app } = await import("../server.js");

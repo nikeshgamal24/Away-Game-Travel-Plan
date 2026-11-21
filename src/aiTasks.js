@@ -453,7 +453,9 @@ export async function whatif(message, history, req, overrides, settings, data, p
 const MEMO_SYSTEM =
   "Write a BGSU athletics trip memo from the approved plan data provided. Start with the approval line. Use only those facts: do not add " +
   "prices, places, times or advice that are not in the data. Sections: Overview, Schedule, Lodging, " +
-  "Meals, Costs, Team rules, Watch-outs. Short plain-text lines with dashes, under 300 words. " +
+  "Meals, Costs, Team rules, Watch-outs. Put each section name alone on its own line, then that section's items as " +
+  "short lines starting with '- '. Never repeat the section name inside the items (write '- Travelers: 22 players', " +
+  "not '- Overview: Travelers: 22 players'). Plain text, under 300 words. " +
   "Copy dollar amounts exactly. Travel-policy values are examples, not BGSU's current policy: call them example " +
   "policy values and never present them as BGSU policy. End with: 'Costs are estimates from the data pack.'";
 
@@ -634,4 +636,152 @@ export async function recommendHotel(cards) {
   }
   const text = [out.headline, out.reason, ...(out.tradeoffs || []).flatMap((t) => [t.upside, t.downside]), ...(out.confirm_with_hotel || [])].join(" ");
   return { ...out, ...webHotels.checkHotelText(text, cards), cached: cached !== null };
+}
+
+// ====================================================================== 8. schedule import (Feature 8)
+// One call reads a pasted schedule or a screenshot into the same schema. Aivana copies; code builds dates and
+// checks every value (static/scheduleRules.js). Missing or unclear values come back as null / `unclear`, never guesses.
+
+const SCHEDULE_FIELDS = ["home_away", "opponent", "city", "stadium", "year", "month", "day", "kickoff", "miles", "drive_hours"];
+
+export function scheduleSchema() {
+  const str = { type: ["string", "null"] };
+  const int = { type: ["integer", "null"] };
+  return {
+    type: "object", additionalProperties: false, required: ["games", "notes"],
+    properties: {
+      games: {
+        type: "array",
+        description: "Every game in the schedule, in the order shown. At most 20.",
+        items: {
+          type: "object", additionalProperties: false,
+          required: ["opponent", "home_away", "city", "stadium", "year", "month", "day", "kickoff", "miles", "drive_hours",
+            "as_printed", "unclear"],
+          properties: {
+            opponent: { ...str, description: "Opponent name exactly as shown." },
+            home_away: { type: "string", enum: ["away", "home", "neutral", "unclear"],
+              description: "'at X' or '@ X' is away; 'vs X' is home unless a neutral site is shown. 'unclear' if not shown." },
+            city: { ...str, description: "City of the game, only if shown." },
+            stadium: { ...str, description: "Stadium or field, only if shown." },
+            year: { ...int, description: "Four-digit year, only if it is printed for this game or in the schedule's title. Never guess." },
+            month: { ...int, description: "Month 1-12, if shown." },
+            day: { ...int, description: "Day of the month, if shown." },
+            kickoff: { ...str, description: "Kickoff as 24-hour HH:MM, 'TBA' if the schedule says TBA/TBD, or null if not shown." },
+            miles: { type: ["number", "null"],
+              description: "Travel distance in miles, ONLY if shown for this game (e.g. '56 mi'). Otherwise null. Never estimate." },
+            drive_hours: { type: ["number", "null"],
+              description: "Drive time in hours, ONLY if shown for this game (e.g. '1.2 hrs'; '1 h 30 m' is 1.5). Otherwise null. Never estimate." },
+            as_printed: { type: "string", description: "This game's row exactly as printed, for staff to compare." },
+            unclear: { type: "array", items: { type: "string", enum: SCHEDULE_FIELDS },
+              description: "Fields you could not read with certainty." },
+          },
+        },
+      },
+      notes: { type: "array", items: { type: "string" }, description: "Short notes about anything you could not read." },
+    },
+  };
+}
+
+const SCHEDULE_SYSTEM =
+  "You copy a college soccer team's game schedule into JSON, for BGSU (Bowling Green State University) men's soccer " +
+  "travel staff. The schedule is pasted text or a screenshot. Copy only what is shown. Never guess or calculate a " +
+  "value: if a year, date, time, city or stadium is not shown, use null. If a value is hard to read, give your best " +
+  "reading and list the field in `unclear`. Use a year only when it is printed for that game or in the schedule's " +
+  "title. Convert times to 24-hour HH:MM (7 PM -> 19:00). Copy miles and drive_hours only if the schedule shows them " +
+  "for that game (for example \"56 mi\" or \"1.2 hrs\"); otherwise use null. Never estimate a distance or a travel time. Do not add games that are not shown. Ignore anything " +
+  "that is not a game (ads, standings, people's names or contact details).";
+
+/** Offline mock: the sample's games, with the second one missing its year and one value unclear. */
+export function mockSchedule(sample) {
+  const games = (sample?.games || []).slice(0, 20).map((g, i) => {
+    const [y, m, d] = g.date.split("-").map(Number);
+    const kick = new Date(`${g.date}T${g.kickoff}`).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    return {
+      opponent: g.opponent, home_away: "away", city: g.city, stadium: g.stadium,
+      year: i === 1 ? null : y, month: m, day: d, kickoff: g.kickoff,
+      as_printed: `${new Date(`${g.date}T12:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}` +
+        ` · at ${g.opponent} · ${g.stadium}, ${g.city} · ${kick}`,
+      unclear: i === 2 ? ["kickoff"] : [],
+    };
+  });
+  return { games, notes: ["Read by offline mock (no Aivana call)."] };
+}
+
+/** Every string anywhere in Aivana's answer, so the personal-details check sees all of it. */
+function allStrings(x, out = []) {
+  if (typeof x === "string") out.push(x);
+  else if (Array.isArray(x)) x.forEach((v) => allStrings(v, out));
+  else if (x && typeof x === "object") Object.values(x).forEach((v) => allStrings(v, out));
+  return out;
+}
+
+export class PersonalInAnswer extends Error {
+  constructor(found) {
+    super(`Aivana's answer contains ${listJoin(found)}, so nothing was kept. ` +
+      "Use a schedule that shows only games (no names or contact details), or crop it, and try again.");
+    this.found = found;
+  }
+}
+
+const toIntOrNull = (v) => (Number.isInteger(v) ? v : (typeof v === "string" && /^\d+$/.test(v.trim()) ? Number(v) : null));
+const toPosNumOrNull = (v) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : null);
+const toStrOrNull = (v) => (typeof v === "string" && v.trim() ? v.trim().slice(0, 200) : null);
+
+/** Shape one answer row into a preview row (types only; the rules in scheduleRules.js decide what's invalid). */
+function previewRow(g) {
+  const unclear = Array.isArray(g.unclear) ? g.unclear.filter((f) => SCHEDULE_FIELDS.includes(f)) : [];
+  const kickoff = toStrOrNull(g.kickoff);
+  return {
+    home_away: ["away", "home", "neutral"].includes(g.home_away) ? g.home_away : "unclear",
+    opponent: toStrOrNull(g.opponent), city: toStrOrNull(g.city), stadium: toStrOrNull(g.stadium),
+    year: toIntOrNull(g.year), month: toIntOrNull(g.month), day: toIntOrNull(g.day),
+    kickoff: kickoff && /^tb[ad]$/i.test(kickoff) ? null : kickoff,
+    miles: toPosNumOrNull(g.miles), drive_hours: toPosNumOrNull(g.drive_hours), // only if the schedule shows them
+    as_printed: typeof g.as_printed === "string" ? g.as_printed.slice(0, 300) : "",
+    unclear: [...new Set(unclear)],
+  };
+}
+
+/** Pasted text: keep miles / drive hours only if that number is really in the text with its unit ("56 mi", "1.2 hrs").
+ * Aivana must never estimate them; for text the code can check it. (An image can't be checked this way.) */
+export function numberShown(text, value, kind) {
+  if (typeof value !== "number") return false;
+  const unit = kind === "miles" ? "(?:mi|mis|mile|miles)\\b" : "(?:h|hr|hrs|hour|hours)\\b";
+  const forms = new Set([String(value), value.toFixed(1), Number.isInteger(value) ? `${value}.0` : null].filter(Boolean));
+  return [...forms].some((f) => new RegExp(`(^|[^\\d.])${f.replace(".", "\\.")}\\s*${unit}`, "i").test(text));
+}
+
+/** Text or image -> preview rows. `image` is { mime_type, data (base64) } and is already checked by the server.
+ * Throws PersonalInAnswer if anything personal comes back; then nothing is cached. */
+export async function readSchedule({ text = null, image = null }, sample, { onRaw = null } = {}) {
+  const payload = image ? { image_sha256: sha256(image.data) } : { text };
+  const validate = (o) => {
+    if (!Array.isArray(o.games)) throw new InvalidAnswer("games must be an array.");
+    if (o.games.some((g) => !g || typeof g !== "object" || Array.isArray(g))) throw new InvalidAnswer("Each game must be an object.");
+  };
+  const [key, cached] = cacheGet("schedule", payload);
+  const out = cached ?? await aivana.structured({
+    kind: "schedule", system: SCHEDULE_SYSTEM, schema: scheduleSchema(), maxTokens: 2000, validate, onRaw, // max_tokens: workspace cap is 2048
+    messages: [{ role: "user", content: image
+      ? "Copy every game in the attached schedule screenshot into the JSON form."
+      : `Copy every game in this schedule into the JSON form.\n\nSchedule:\n${text}` }],
+    ...(image ? { attachments: [{ mime_type: image.mime_type, data: image.data }] } : {}),
+    mock: () => mockSchedule(sample),
+  });
+  const found = personalDetails(allStrings(out).join("\n"));
+  if (found.length) throw new PersonalInAnswer(found);
+  if (cached === null) cachePut(key, out);
+  const notes = (Array.isArray(out.notes) ? out.notes : []).filter((n) => typeof n === "string").slice(0, 10);
+  if (out.games.length > 20) notes.push(`Only the first 20 of ${out.games.length} games were kept.`);
+  const rows = out.games.slice(0, 20).map(previewRow);
+  if (text) {
+    let dropped = 0;
+    for (const r of rows) {
+      for (const k of ["miles", "drive_hours"]) {
+        if (r[k] !== null && !numberShown(text, r[k], k)) { r[k] = null; dropped += 1; }
+      }
+    }
+    if (dropped) notes.push(`${dropped} distance or drive-time value${dropped === 1 ? " wasn't" : "s weren't"} in the pasted text, so ${dropped === 1 ? "it was" : "they were"} left empty.`);
+  }
+  return { rows, notes };
 }

@@ -82,3 +82,38 @@ describe("trip memo PDF", () => {
     assert.ok(s.includes("99,999.00"));
   });
 });
+
+describe("memo layout (static/memoFormat.js, shared by the app and the PDF)", async () => {
+  const { tidyMemo, memoHtml } = await import("../static/memoFormat.js");
+  const { readFileSync } = await import("node:fs");
+  const prefixed = readFileSync(new URL("./fixtures/memo-prefixed.txt", import.meta.url), "utf8"); // a real Aivana memo
+
+  test("'- Overview: x' lines become one 'Overview' heading with '- x' bullets", () => {
+    const t = tidyMemo(prefixed).split("\n");
+    for (const s of ["Overview", "Schedule", "Lodging", "Meals", "Costs", "Team rules", "Watch-outs"]) {
+      assert.equal(t.filter((l) => l === s).length, 1, `${s} heading once`);
+      assert.ok(!t.some((l) => l.startsWith(`- ${s}:`)), `no '- ${s}:' prefix left`);
+    }
+    assert.equal(t[t.indexOf("Overview") + 3], "- Travelers: 22 players, 4 coaches, 3 staff"); // inner labels kept
+    assert.equal(t[t.indexOf("Meals") + 1], "- Team dinner (night before): Pier 9 Buffet, $580.00");
+    assert.equal(t.at(-1), "Costs are estimates from the data pack.");
+  });
+  test("a memo that already has headings is left as it is", () => {
+    const good = "Approved by Head Coach\n\nOverview\n- Option B\n- Travelers: 22 players\n\nCosts\n- Transport: $5,450.00";
+    assert.equal(tidyMemo(good), good);
+  });
+  test("the app's memo box gets headings and lists", () => {
+    const h = memoHtml(prefixed);
+    assert.equal((h.match(/<h4>Overview<\/h4>/g) || []).length, 1);
+    assert.ok(h.startsWith('<p class="memo-lead">Approved by Travel Coordinator'));
+    assert.ok(h.includes("<li>Fri 1:00 PM depart BGSU campus by charter bus</li>"));
+    assert.ok(!h.includes("Schedule: Fri"));
+    assert.ok(!memoHtml("<script>x</script>").includes("<script>"));
+  });
+  test("the PDF prints each section heading once, without the prefixes", () => {
+    const s = memoBlocks(prefixed);
+    assert.equal(s.filter((b) => b.type === "heading" && b.text === "Overview").length, 1);
+    assert.ok(!s.some((b) => /^(Overview|Schedule|Meals|Costs):/.test(b.text || "")));
+    assert.ok(s.some((b) => b.bullet && b.text === "Harbor Point Hotel, 18 rooms"));
+  });
+});

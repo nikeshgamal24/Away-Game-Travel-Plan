@@ -14,6 +14,8 @@ import * as aiTasks from "./src/aiTasks.js";
 import * as planner from "./src/planner.js";
 import { memoPdf } from "./src/pdf.js";
 import * as webHotels from "./src/webHotels.js";
+import * as schedImport from "./src/scheduleImport.js";
+import { checkRows, rowIsValid, toSavedGames, FIELDS as SCHEDULE_FIELDS, MAX_GAMES } from "./static/scheduleRules.js";
 import { money, round, toInt, toFloat, parseDT, addHours, strftime, stableStringify, sha256, nowLocal } from "./src/util.js";
 
 export const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -36,6 +38,17 @@ loadEnvFile(join(ROOT, ".env"));
 if (process.argv.includes("--mock")) process.env.AIVANA_MOCK = "1"; // npm run mock: offline demo
 
 export const DATA = planner.loadData();
+// Feature 8: staff can import a schedule. The sample (data/schedule.json) is never changed; an import is saved to
+// data/schedule.imported.json (gitignored) and used instead when present.
+const SAMPLE_SCHEDULE = DATA.schedule;
+let SCHEDULE_STATE = { source: "sample", warning: "" };
+function useSchedule({ schedule, source, warning }) {
+  DATA.schedule = schedule;
+  SCHEDULE_STATE = { source, warning };
+}
+useSchedule(schedImport.loadSchedule(SAMPLE_SCHEDULE));
+/** Tests: reload from whatever file SCHEDULE_IMPORTED_FILE points to now. */
+export const _reloadSchedule = () => useSchedule(schedImport.loadSchedule(SAMPLE_SCHEDULE));
 export const APPROVER_ROLES = ["Head Coach", "Director of Operations", "Travel Coordinator", "Sport Administrator (Associate AD)"];
 // Local record of approvals (gitignored). Tests point this somewhere else.
 let APPROVALS_FILE = process.env.APPROVALS_FILE || join(ROOT, "approvals.json");
@@ -48,10 +61,13 @@ function loadApprovals() {
 let APPROVALS = loadApprovals();
 export function _setApprovalsFile(path) { APPROVALS_FILE = path; APPROVALS = loadApprovals(); }
 
-/** Identifies exactly what was approved: request, every setting, staff choices, option. */
+/** Identifies exactly what was approved: request, the game as scheduled, every setting, staff choices, option.
+ * The game is included so an imported schedule that moves the date or kickoff makes the approval out of date. */
 export function planFingerprint(req, settings, custom, optionId) {
   const s = Object.fromEntries(Object.keys(planner.EDITABLE_SETTINGS).map((k) => [k, settings[k] ?? null]));
-  return sha256(stableStringify({ req, settings: s, custom: custom ?? null, option: optionId })).slice(0, 16);
+  const g = planner.getGame(DATA, req?.game_id || "");
+  const game = g && Object.fromEntries(["opponent", "city", "stadium", "date", "kickoff", "miles", "drive_hours"].map((k) => [k, g[k] ?? null]));
+  return sha256(stableStringify({ req, game, settings: s, custom: custom ?? null, option: optionId })).slice(0, 16);
 }
 
 export function requiredAcks(pkg) {
@@ -130,6 +146,40 @@ function seasonInputs(b) {
   return { settings, party };
 }
 
+/** Which schedule is in use, for the Settings box. */
+const scheduleInfo = () => ({ source: SCHEDULE_STATE.source, warning: SCHEDULE_STATE.warning, games: DATA.schedule.games.length });
+
+/** Image upload for /api/schedule/read: checked from its own bytes, never from its name or claimed type. */
+function checkedImage(img) {
+  if (!img || typeof img !== "object" || typeof img.data !== "string") throw bad(schedImport.TYPE_MESSAGE);
+  const b64 = img.data.replace(/\s+/g, "");
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) throw bad(schedImport.TYPE_MESSAGE);
+  const buf = Buffer.from(b64, "base64");
+  // A PDF is refused here, before anything else, whatever it was called. It is never sent to Aivana.
+  if (schedImport.isPdf(buf) || /pdf/i.test(String(img.mime_type || ""))) throw bad(schedImport.PDF_MESSAGE, { code: "pdf" });
+  const { type, width } = schedImport.sniffImage(buf);
+  if (!type) throw bad(schedImport.TYPE_MESSAGE, { code: "image_type" });
+  if (!width) throw bad("This image couldn't be read. Take a new screenshot and try again.", { code: "image_type" });
+  if (width > schedImport.MAX_WIDTH) {
+    throw bad(`The image is ${width}px wide. The most is ${schedImport.MAX_WIDTH}px. Upload it again from this page, which shrinks it.`,
+      { code: "image_width" });
+  }
+  return { mime_type: type, data: b64 };
+}
+
+/** Rows sent back by the browser -> plain rows with only the known fields. */
+function cleanRows(rows) {
+  if (!Array.isArray(rows)) throw bad("No rows to save. Read a schedule first.");
+  if (rows.length > MAX_GAMES) throw bad(`At most ${MAX_GAMES} games can be imported.`);
+  return rows.map((r) => {
+    const o = r && typeof r === "object" ? r : {};
+    const row = Object.fromEntries(SCHEDULE_FIELDS.map((f) => [f, o[f] === undefined ? null : o[f]]));
+    for (const f of SCHEDULE_FIELDS) if (row[f] !== null && typeof row[f] !== "string" && typeof row[f] !== "number") row[f] = null;
+    row.unclear = Array.isArray(o.unclear) ? o.unclear.filter((f) => SCHEDULE_FIELDS.includes(f)) : [];
+    return row; // as_printed is never kept
+  });
+}
+
 const routes = {
   "GET /api/bootstrap": () => ({
     games: DATA.schedule.games.map((x) => ({ ...x,
@@ -138,9 +188,60 @@ const routes = {
     setting_groups: Object.fromEntries(Object.entries(planner.EDITABLE_SETTINGS).map(([k, v]) => [k, v[2]])),
     mock: aivana.mockMode(), home: DATA.schedule.home || {}, approver_roles: APPROVER_ROLES,
     sample_request: SAMPLE_REQUEST, disclaimer: planner.DISCLAIMER, active_players: planner.activePlayerCount(DATA),
+    schedule: scheduleInfo(),
   }),
 
   "GET /api/usage": () => aivana.USAGE,
+
+  // ------------------------------------------------------------- schedule import (Feature 8)
+  /** Pasted text or a PNG/JPG screenshot -> preview rows. One Aivana call. Nothing is saved here. */
+  "POST /api/schedule/read": async (b) => {
+    let input;
+    if (b.image !== undefined && b.image !== null) {
+      input = { image: checkedImage(b.image) };
+    } else {
+      const text = String(b.text || "").trim();
+      if (text.length < 10) throw bad("Paste the schedule (at least one game) or upload a screenshot.");
+      if (text.length > 5000) throw bad(`The pasted schedule is ${text.length} characters. The most is 5,000. Paste only the games.`);
+      const found = aiTasks.personalDetails(text);
+      if (found.length) throw bad(aiTasks.PERSONAL_MESSAGE(found), { code: "personal_details" });
+      input = { text };
+    }
+    let out;
+    try { out = await aiTasks.readSchedule(input, SAMPLE_SCHEDULE); }
+    catch (e) {
+      if (e instanceof aiTasks.PersonalInAnswer) throw bad(e.message, { code: "personal_details" });
+      if (e instanceof AivanaError) throw aiError(e);
+      throw e;
+    }
+    if (!out.rows.length) throw bad("No games could be read. Try a clearer screenshot or paste the text.", { code: "no_games" });
+    return { rows: out.rows, notes: out.notes, checks: checkRows(out.rows), mock: aivana.mockMode(),
+      source: input.image ? "image" : "text" };
+  },
+
+  /** Staff-checked rows -> data/schedule.imported.json. Every row is checked again here. */
+  "POST /api/schedule/save": (b) => {
+    if (b.confirm !== true) throw bad("Tick the box to confirm that this replaces the current schedule.");
+    const rows = cleanRows(b.rows);
+    const checks = checkRows(rows);
+    const errors = [];
+    checks.forEach((c, i) => {
+      for (const [f, why] of Object.entries(c.problems)) errors.push(`Row ${i + 1} ${f.replace("_", " ")}: ${why}`);
+    });
+    if (errors.length) throw bad("Fix the red cells first.", { errors: errors.slice(0, 20) });
+    const games = toSavedGames(rows);
+    if (!games.length) throw bad("There are no away games to save.");
+    const schedule = schedImport.saveImported(games, SAMPLE_SCHEDULE);
+    useSchedule({ schedule, source: "imported", warning: "" });
+    return { schedule: scheduleInfo(), saved: games.length, skipped_home: rows.length - games.length };
+  },
+
+  /** Delete the imported schedule and go back to the sample. Safe to call when there is none. */
+  "POST /api/schedule/reset": () => {
+    schedImport.deleteImported();
+    useSchedule({ schedule: SAMPLE_SCHEDULE, source: "sample", warning: "" });
+    return { schedule: scheduleInfo() };
+  },
 
   /** Season overview: per-game overnight verdict, hotel recommendations, per-game budget. Code only, no AI. */
   "POST /api/season": (b) => {
@@ -413,12 +514,18 @@ function sendJson(res, status, obj) {
   res.end(body);
 }
 
-async function readBody(req) {
+// Feature 8: a screenshot is sent as base64, so this one route takes more (3 MB, about 2.2 MB of image).
+const BODY_LIMITS = { "/api/schedule/read": schedImport.MAX_READ_BODY };
+
+async function readBody(req, limit = MAX_BODY) {
   const chunks = [];
   let size = 0;
   for await (const c of req) {
     size += c.length;
-    if (size > MAX_BODY) throw bad("Request body too large.", {}, 413);
+    if (size > limit) {
+      throw bad(limit > MAX_BODY ? "The image is too large even after shrinking. Crop it to the schedule and try again."
+        : "Request body too large.", { code: "too_large" }, 413);
+    }
     chunks.push(c);
   }
   try {
@@ -445,7 +552,7 @@ export async function handle(req, res) {
     if (req.method === "GET" && (path === "/" || path.startsWith("/static/"))) return await serveStatic(res, path);
     const route = routes[`${req.method} ${path}`];
     if (!route) return sendJson(res, path.startsWith("/api/") ? 405 : 404, { error: "Not found" });
-    const b = req.method === "POST" ? await readBody(req) : {};
+    const b = req.method === "POST" ? await readBody(req, BODY_LIMITS[path]) : {};
     const out = await route(b, res);
     if (out !== undefined) sendJson(res, 200, out);
   } catch (e) {
