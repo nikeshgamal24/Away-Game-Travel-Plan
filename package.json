@@ -1,0 +1,18 @@
+{
+  "name": "bgsu-away-game-planner",
+  "version": "1.0.0",
+  "description": "BGSU men's soccer away-game travel planner (2026 BGSU Hackathon, Project B). Node.js backend, no dependencies.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "mock": "node server.js --mock",
+    "test": "node --test \"test/*.test.js\"",
+    "eval": "node scripts/eval-parse.js",
+    "eval:trust": "node scripts/eval-trust.js",
+    "evidence:web-hotels": "node scripts/web-hotels-evidence.js"
+  }
+}

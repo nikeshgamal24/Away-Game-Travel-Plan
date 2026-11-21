@@ -1,0 +1,19 @@
+{
+ "note": "Synthetic charter bus rates. Cost per bus = max(min_charge, per_mile x round-trip miles) + driver overnight fee per night.",
+ "vendors": [
+  {
+   "vendor_id": "B1",
+   "name": "Falcon Coach Lines",
+   "per_mile": 5.0,
+   "min_charge": 1500,
+   "driver_overnight_fee": 250
+  },
+  {
+   "vendor_id": "B2",
+   "name": "Maumee Charter Co.",
+   "per_mile": 5.4,
+   "min_charge": 1200,
+   "driver_overnight_fee": 180
+  }
+ ]
+}

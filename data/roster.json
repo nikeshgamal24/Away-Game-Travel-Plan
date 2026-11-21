@@ -1,0 +1,247 @@
+{
+ "note": "Synthetic men's soccer roster. IDs only, no real people.",
+ "players": [
+  {
+   "player_id": "P01",
+   "position": "GK",
+   "year": "JR",
+   "depth_rank": 1,
+   "status": "active"
+  },
+  {
+   "player_id": "P02",
+   "position": "GK",
+   "year": "JR",
+   "depth_rank": 2,
+   "status": "active"
+  },
+  {
+   "player_id": "P03",
+   "position": "GK",
+   "year": "FR",
+   "depth_rank": 3,
+   "status": "active"
+  },
+  {
+   "player_id": "P04",
+   "position": "D",
+   "year": "SR",
+   "depth_rank": 4,
+   "status": "active"
+  },
+  {
+   "player_id": "P05",
+   "position": "D",
+   "year": "SO",
+   "depth_rank": 5,
+   "status": "active"
+  },
+  {
+   "player_id": "P06",
+   "position": "D",
+   "year": "FR",
+   "depth_rank": 6,
+   "status": "active"
+  },
+  {
+   "player_id": "P07",
+   "position": "D",
+   "year": "SO",
+   "depth_rank": 7,
+   "status": "active"
+  },
+  {
+   "player_id": "P08",
+   "position": "D",
+   "year": "FR",
+   "depth_rank": 8,
+   "status": "active"
+  },
+  {
+   "player_id": "P09",
+   "position": "D",
+   "year": "JR",
+   "depth_rank": 9,
+   "status": "active"
+  },
+  {
+   "player_id": "P10",
+   "position": "D",
+   "year": "SR",
+   "depth_rank": 10,
+   "status": "active"
+  },
+  {
+   "player_id": "P11",
+   "position": "D",
+   "year": "SO",
+   "depth_rank": 11,
+   "status": "active"
+  },
+  {
+   "player_id": "P12",
+   "position": "D",
+   "year": "SR",
+   "depth_rank": 12,
+   "status": "injured"
+  },
+  {
+   "player_id": "P13",
+   "position": "M",
+   "year": "FR",
+   "depth_rank": 13,
+   "status": "active"
+  },
+  {
+   "player_id": "P14",
+   "position": "M",
+   "year": "SO",
+   "depth_rank": 14,
+   "status": "active"
+  },
+  {
+   "player_id": "P15",
+   "position": "M",
+   "year": "FR",
+   "depth_rank": 15,
+   "status": "active"
+  },
+  {
+   "player_id": "P16",
+   "position": "M",
+   "year": "SO",
+   "depth_rank": 16,
+   "status": "active"
+  },
+  {
+   "player_id": "P17",
+   "position": "M",
+   "year": "SR",
+   "depth_rank": 17,
+   "status": "active"
+  },
+  {
+   "player_id": "P18",
+   "position": "M",
+   "year": "JR",
+   "depth_rank": 18,
+   "status": "active"
+  },
+  {
+   "player_id": "P19",
+   "position": "M",
+   "year": "SO",
+   "depth_rank": 19,
+   "status": "active"
+  },
+  {
+   "player_id": "P20",
+   "position": "M",
+   "year": "SR",
+   "depth_rank": 20,
+   "status": "active"
+  },
+  {
+   "player_id": "P21",
+   "position": "M",
+   "year": "SO",
+   "depth_rank": 21,
+   "status": "active"
+  },
+  {
+   "player_id": "P22",
+   "position": "M",
+   "year": "FR",
+   "depth_rank": 22,
+   "status": "active"
+  },
+  {
+   "player_id": "P23",
+   "position": "F",
+   "year": "SO",
+   "depth_rank": 23,
+   "status": "active"
+  },
+  {
+   "player_id": "P24",
+   "position": "F",
+   "year": "SR",
+   "depth_rank": 24,
+   "status": "active"
+  },
+  {
+   "player_id": "P25",
+   "position": "F",
+   "year": "SO",
+   "depth_rank": 25,
+   "status": "active"
+  },
+  {
+   "player_id": "P26",
+   "position": "F",
+   "year": "SO",
+   "depth_rank": 26,
+   "status": "active"
+  },
+  {
+   "player_id": "P27",
+   "position": "F",
+   "year": "FR",
+   "depth_rank": 27,
+   "status": "injured"
+  },
+  {
+   "player_id": "P28",
+   "position": "F",
+   "year": "FR",
+   "depth_rank": 28,
+   "status": "active"
+  },
+  {
+   "player_id": "P29",
+   "position": "F",
+   "year": "SO",
+   "depth_rank": 29,
+   "status": "active"
+  },
+  {
+   "player_id": "P30",
+   "position": "F",
+   "year": "SO",
+   "depth_rank": 30,
+   "status": "active"
+  }
+ ],
+ "coaches": [
+  {
+   "coach_id": "C01",
+   "role": "Head Coach"
+  },
+  {
+   "coach_id": "C02",
+   "role": "Associate Head Coach"
+  },
+  {
+   "coach_id": "C03",
+   "role": "Assistant Coach"
+  },
+  {
+   "coach_id": "C04",
+   "role": "Goalkeeper Coach"
+  }
+ ],
+ "staff": [
+  {
+   "staff_id": "S01",
+   "role": "Athletic Trainer"
+  },
+  {
+   "staff_id": "S02",
+   "role": "Director of Operations"
+  },
+  {
+   "staff_id": "S03",
+   "role": "Sports Information"
+  }
+ ]
+}

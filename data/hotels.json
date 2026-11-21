@@ -1,0 +1,96 @@
+{
+ "note": "Synthetic hotels. Rates are per room per night before tax. Bus parking fee is per bus per night.",
+ "hotels": [
+  {
+   "hotel_id": "H1",
+   "city": "Lakeview",
+   "name": "Lakeview Inn",
+   "nightly_rate": 119,
+   "miles_to_stadium": 8.0,
+   "rooms_available": 45,
+   "breakfast_included": true,
+   "bus_parking": true,
+   "bus_parking_fee_per_night": 0,
+   "meeting_room": true,
+   "late_checkout": true
+  },
+  {
+   "hotel_id": "H2",
+   "city": "Lakeview",
+   "name": "Stadium Suites",
+   "nightly_rate": 149,
+   "miles_to_stadium": 1.2,
+   "rooms_available": 40,
+   "breakfast_included": false,
+   "bus_parking": true,
+   "bus_parking_fee_per_night": 40,
+   "meeting_room": true,
+   "late_checkout": true
+  },
+  {
+   "hotel_id": "H3",
+   "city": "Lakeview",
+   "name": "Budget Lodge Lakeview",
+   "nightly_rate": 89,
+   "miles_to_stadium": 14.0,
+   "rooms_available": 20,
+   "breakfast_included": false,
+   "bus_parking": false,
+   "bus_parking_fee_per_night": 0,
+   "meeting_room": false,
+   "late_checkout": false
+  },
+  {
+   "hotel_id": "H4",
+   "city": "Riverbend",
+   "name": "Riverbend Courtyard",
+   "nightly_rate": 109,
+   "miles_to_stadium": 3.5,
+   "rooms_available": 50,
+   "breakfast_included": true,
+   "bus_parking": true,
+   "bus_parking_fee_per_night": 0,
+   "meeting_room": true,
+   "late_checkout": true
+  },
+  {
+   "hotel_id": "H5",
+   "city": "Riverbend",
+   "name": "River House Hotel",
+   "nightly_rate": 139,
+   "miles_to_stadium": 0.8,
+   "rooms_available": 42,
+   "breakfast_included": false,
+   "bus_parking": false,
+   "bus_parking_fee_per_night": 0,
+   "meeting_room": true,
+   "late_checkout": true
+  },
+  {
+   "hotel_id": "H6",
+   "city": "Harbor City",
+   "name": "Harbor Point Hotel",
+   "nightly_rate": 129,
+   "miles_to_stadium": 6.0,
+   "rooms_available": 60,
+   "breakfast_included": true,
+   "bus_parking": true,
+   "bus_parking_fee_per_night": 0,
+   "meeting_room": true,
+   "late_checkout": true
+  },
+  {
+   "hotel_id": "H7",
+   "city": "Harbor City",
+   "name": "Dome Gate Suites",
+   "nightly_rate": 169,
+   "miles_to_stadium": 0.5,
+   "rooms_available": 45,
+   "breakfast_included": false,
+   "bus_parking": true,
+   "bus_parking_fee_per_night": 50,
+   "meeting_room": false,
+   "late_checkout": true
+  }
+ ]
+}

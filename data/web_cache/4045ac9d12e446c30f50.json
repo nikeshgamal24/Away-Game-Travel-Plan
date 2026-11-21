@@ -1,0 +1,126 @@
+{
+ "query": {
+  "city": "Des Moines, Iowa",
+  "stadium": "Mediacom Stadium, Drake University",
+  "reference": "BGSU at Drake, Oct. 18, 2025",
+  "checkin": "2027-10-15",
+  "checkout": "2027-10-16",
+  "nights": 1,
+  "rooms": 18
+ },
+ "result": {
+  "query": {
+   "city": "Des Moines, Iowa",
+   "stadium": "Mediacom Stadium, Drake University",
+   "reference": "BGSU at Drake, Oct. 18, 2025",
+   "checkin": "2027-10-15",
+   "checkout": "2027-10-16",
+   "nights": 1,
+   "rooms": 18
+  },
+  "hotels": [
+   {
+    "hotel_id": "W1",
+    "name": "Surety Hotel",
+    "address": "206 6th Ave, Des Moines, IA 50309",
+    "nightly_rate_usd": null,
+    "miles_to_stadium": null,
+    "bus_parking": "unknown",
+    "sources": [
+     {
+      "url": "https://www.suretyhotel.com/",
+      "ok": true,
+      "reason": ""
+     },
+     {
+      "url": "https://www.catchdesmoines.com/listing/surety-hotel/1032/",
+      "ok": false,
+      "reason": "page returned 404"
+     }
+    ]
+   }
+  ],
+  "rejected": [
+   {
+    "name": "Holiday Inn Express & Suites Des Moines Downtown",
+    "sources": [
+     {
+      "url": "https://www.ihg.com/holidayinnexpress/hotels/us/en/des-moines/dsmex/hoteldetail",
+      "ok": false,
+      "reason": "page doesn't mention the hotel"
+     },
+     {
+      "url": "https://www.catchdesmoines.com/listing/holiday-inn-express-%26-suites-des-moines-downtown/1020/",
+      "ok": false,
+      "reason": "page returned 404"
+     }
+    ]
+   },
+   {
+    "name": "Hilton Des Moines Downtown",
+    "sources": [
+     {
+      "url": "https://www.hilton.com/en/hotels/dsmhhdh-hilton-des-moines-downtown/",
+      "ok": false,
+      "reason": "page returned 403"
+     },
+     {
+      "url": "https://www.catchdesmoines.com/listing/hilton-des-moines-downtown/1017/",
+      "ok": false,
+      "reason": "page returned 404"
+     }
+    ]
+   },
+   {
+    "name": "Hyatt Place Des Moines / Downtown",
+    "sources": [
+     {
+      "url": "https://www.hyatt.com/en-US/hotel/iowa/hyatt-place-des-moines-downtown/dsmzd",
+      "ok": false,
+      "reason": "page returned 429"
+     },
+     {
+      "url": "https://www.catchdesmoines.com/listing/hyatt-place-des-moines-downtown/1018/",
+      "ok": false,
+      "reason": "page doesn't mention the hotel"
+     }
+    ]
+   },
+   {
+    "name": "Renaissance Des Moines Savery Hotel",
+    "sources": [
+     {
+      "url": "https://www.marriott.com/en-us/hotels/dsmbr-renaissance-des-moines-savery-hotel/overview/",
+      "ok": false,
+      "reason": "page returned 403"
+     },
+     {
+      "url": "https://www.catchdesmoines.com/listing/renaissance-des-moines-savery-hotel/1029/",
+      "ok": false,
+      "reason": "page returned 404"
+     }
+    ]
+   },
+   {
+    "name": "Embassy Suites by Hilton Des Moines Downtown",
+    "sources": [
+     {
+      "url": "https://www.hilton.com/en/hotels/dsmeses-embassy-suites-by-hilton-des-moines-downtown/",
+      "ok": false,
+      "reason": "page returned 403"
+     },
+     {
+      "url": "https://www.catchdesmoines.com/listing/embassy-suites-by-hilton-des-moines-downtown/1014/",
+      "ok": false,
+      "reason": "page returned 404"
+     }
+    ]
+   }
+  ],
+  "links_checked": true,
+  "status": "ok",
+  "message": "",
+  "mock": false,
+  "searched_at": "2026-11-21T09:01"
+ }
+}

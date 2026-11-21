@@ -1,0 +1,252 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.42 system-ui,-apple-system,"Segoe UI",sans-serif;color:#1f2328;background:#fff;width:1560px}
+.wrap{padding:28px 34px 30px;position:relative}
+h1{font-size:25px;margin:0 0 4px;font-weight:700}
+.sub{color:#5f646b;margin:0 0 16px;font-size:15px}
+.top{display:flex;gap:16px;align-items:stretch;margin-bottom:18px}
+.box{border:1px solid #e3e1dc;border-radius:12px;padding:10px 14px;background:#fbfaf8}
+.box h3{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#5f646b}
+.legend span{display:inline-flex;align-items:center;gap:6px;margin:0 14px 5px 0;font-size:13px}
+.sw{width:15px;height:15px;border-radius:4px;display:inline-block;border:1.5px solid}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.d{display:inline-block;font:600 11.5px/1 ui-monospace,Menlo,monospace;padding:4px 6px;border-radius:6px;background:#fff;border:1px solid #cfcac0;color:#4a3a22}
+.d.cfg{border-color:#c9b6e6;color:#4b2f7a}
+.lanes{display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:124px;margin-bottom:8px}
+.lh{text-align:center;font-weight:700;color:#fff;padding:7px;border-radius:9px;font-size:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:124px;row-gap:42px;align-items:start;position:relative;z-index:2}
+.n{border-radius:12px;border:1.6px solid;padding:9px 12px 10px;background:#fff;position:relative}
+.n .tag{font:700 10.5px/1 system-ui;letter-spacing:.05em;text-transform:uppercase;opacity:.8}
+.n .no{position:absolute;top:-11px;left:-11px;width:24px;height:24px;border-radius:50%;color:#fff;font:700 12px/24px system-ui;text-align:center}
+.n b.t{display:block;font-size:15.5px;margin:3px 0 4px}
+.n .k{font-size:12.6px;margin-top:3px}
+.n .k i{font-style:normal;font-weight:700;color:#3c4046;margin-right:3px}
+.n ul{margin:3px 0 0;padding-left:17px;font-size:12.4px}
+.n ul li{margin:1px 0}
+.n .out{margin-top:5px;font-size:12.4px;padding:4px 7px;border-radius:7px;background:rgba(0,0,0,.045)}
+.S{background:#fff6f0;border-color:#e9a37c}.S .no{background:#c8501b}.S .tag{color:#a8410f}
+.C{background:#effaf3;border-color:#8fcca9}.C .no{background:#1f7a4d}.C .tag{color:#1a6640}
+.A{background:#f3f2fe;border-color:#aeaaf0}.A .no{background:#3d3aa8}.A .tag{color:#3633a0}
+.G{background:#fff;border:3px solid #1f2328}.G .no{background:#1f2328}.G .tag{color:#1f2328}
+.lvl{display:inline-block;font:700 10.5px/1 system-ui;padding:3px 6px;border-radius:999px;margin-left:5px;vertical-align:2px;color:#fff}
+.L1{background:#1f2328}.L2{background:#3d3aa8}.L3{background:#c8501b}
+svg#edges{position:absolute;left:0;top:0;z-index:1;overflow:visible}
+svg#edges.front{z-index:3;pointer-events:none}
+.el{font:600 11.5px system-ui;fill:#30343a}
+.foot{margin-top:24px;display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:14px}
+.foot .box{font-size:12.8px}
+.foot ul{margin:0;padding-left:17px}
+</style></head><body><div class="wrap" id="wrap">
+<h1>BGSU Men's Soccer Away-Game Travel Planner: system flow (DAG)</h1>
+<p class="sub">Each box says what the step <b>does</b>, which data it <b>reads</b>, what it <b>checks</b>, and what it hands to the next step. Code does every calculation · staff set the rules and approve · Aivana only reads, explains and writes.</p>
+
+<div class="top">
+ <div class="box legend" style="flex:0 0 430px"><h3>Legend</h3>
+  <span><i class="sw" style="background:#fff6f0;border-color:#e9a37c"></i>Staff (human decision)</span>
+  <span><i class="sw" style="background:#effaf3;border-color:#8fcca9"></i>App code (math, checks, sorting)</span><br>
+  <span><i class="sw" style="background:#f3f2fe;border-color:#aeaaf0"></i>Aivana API call</span>
+  <span><i class="sw" style="background:#fff;border-color:#1f2328;border-width:3px"></i>Hard gate</span><br>
+  <span><span class="lvl L1">L1</span> Core</span><span><span class="lvl L2">L2</span> Standard</span><span><span class="lvl L3">L3</span> Advanced</span>
+  <span style="font-size:12.5px">—— data flow &nbsp; - - - loop / reject</span>
+ </div>
+ <div class="box" style="flex:1"><h3>Data the code reads (synthetic data pack, <code>data/</code>)</h3>
+  <div class="chips">
+   <span class="d">schedule.json</span><span class="d">roster.json</span><span class="d">hotels.json</span><span class="d">restaurants.json</span>
+   <span class="d">bus_rates.json</span><span class="d">flight_fares.json</span><span class="d">benchmarks.json</span><span class="d cfg">settings.json</span>
+  </div>
+  <div style="font-size:12.5px;margin-top:7px;color:#4a4f55">Aivana never sees these files. It only gets the request text, or short summaries the code has already computed. The API key stays on the server in <code>.env</code>.</div>
+ </div>
+</div>
+
+<div class="lanes"><div class="lh" style="background:#c8501b">STAFF</div><div class="lh" style="background:#1f7a4d">APP CODE (Node.js backend)</div><div class="lh" style="background:#3d3aa8">AIVANA (via backend only)</div></div>
+
+<div class="grid" id="grid">
+
+<!-- r1 -->
+<div class="n C" id="n0" style="grid-column:2;grid-row:1"><span class="no">0</span><span class="tag">Code · season view</span><span class="lvl L3">L3</span>
+ <b class="t">Season overview</b>
+ <div class="k"><i>Does:</i> gives each away game a verdict, suggested hotels and a share of the season budget</div>
+ <div class="k"><i>Reads:</i> <span class="d">schedule.json</span> <span class="d">hotels.json</span> <span class="d">benchmarks.json</span> <span class="d cfg">settings.json</span></div>
+ <ul><li>≤ 50 mi → day trip only (example policy value)</li><li>&gt; 50 mi → overnight only if a same-day trip breaks the time rules</li><li>Budget split by each game's estimated cost, rounded to $100</li></ul>
+ <div class="out">→ "Plan this trip" fills the form + per-game budget</div></div>
+
+<!-- r2 -->
+<div class="n S" id="n1" style="grid-column:1;grid-row:2"><span class="no">1</span><span class="tag">Staff</span><span class="lvl L1">L1</span>
+ <b class="t">Trip request</b>
+ <div class="k">Free text: <i></i>"Sunday at Lakeview State, 1 PM kickoff. 22 players, 4 coaches, 3 staff. Train until noon Saturday. Budget $6,000."</div>
+ <div class="out">→ or fill the form directly (skips Aivana)</div></div>
+<div class="n A" id="a1" style="grid-column:3;grid-row:2"><span class="no">A1</span><span class="tag">Aivana · structured output (JSON Schema)</span><span class="lvl L1">L1</span>
+ <b class="t">Parse request</b>
+ <div class="k"><i>Does:</i> turns the text into form fields</div>
+ <ul><li>game_id must be in an enum of real schedule IDs, or null</li><li>Missing info → null, never guessed</li><li>Departure day/time as a choice; code computes the date</li><li>Same text again → cached, no new call</li></ul>
+ <div class="out">→ JSON fields</div></div>
+
+<!-- r3 -->
+<div class="n S" id="n3" style="grid-column:1;grid-row:3"><span class="no">2</span><span class="tag">Staff</span><span class="lvl L1">L1</span><span class="lvl L3">L3</span>
+ <b class="t">Team rules + settings</b>
+ <div class="k"><i>Sets:</i> earliest departure, max game-day bus hrs, pregame meal hrs, check-in by, home by, hotel needs bus parking / meeting room</div>
+ <div class="k"><i>Edits:</i> seats per bus, people per room, meal allowance, example policy values, extras</div>
+ <div class="out">→ settings (defaults from <span class="d cfg">settings.json</span>)</div></div>
+<div class="n C" id="n2" style="grid-column:2;grid-row:3"><span class="no">3</span><span class="tag">Code</span><span class="lvl L1">L1</span>
+ <b class="t">Validate input</b>
+ <div class="k"><i>Reads:</i> <span class="d">schedule.json</span> <span class="d cfg">settings.json</span> (allowed min/max)</div>
+ <ul><li>Game exists · counts are whole numbers ≥ 0</li><li>Departure is before kickoff</li><li>Every setting is within its allowed range</li></ul>
+ <div class="out">✗ fail → error shown to staff, nothing computed</div></div>
+
+<!-- r4 -->
+<div class="n C" id="n4" style="grid-column:2;grid-row:4"><span class="no">4</span><span class="tag">Code</span><span class="lvl L1">L1</span>
+ <b class="t">Count the party</b>
+ <div class="k"><i>Does:</i> travelers = players + coaches + staff · buses = ⌈travelers ÷ seats per bus⌉ · rooms = ⌈players ÷ 2⌉ + ⌈staff ÷ 1⌉</div>
+ <div class="out">Lakeview: 29 travelers → 1 bus · 18 rooms (11 + 7)</div></div>
+
+<!-- r5 -->
+<div class="n C" id="n5" style="grid-column:2;grid-row:5"><span class="no">5</span><span class="tag">Code</span><span class="lvl L3">L3</span>
+ <b class="t">Filter hotels</b>
+ <div class="k"><i>Reads:</i> <span class="d">hotels.json</span> (same city as the game)</div>
+ <ul><li>Game ≤ 50 mi → no hotels at all (day trip only)</li><li>Enough free rooms? · under the rate cap?</li><li>Bus parking / meeting room if the team rule requires it</li><li>Cost = rooms × rate × nights + tax + bus parking fee</li></ul>
+ <div class="out">→ usable hotels; the rest keep a reason, e.g. "H3: no bus parking (team rule)"</div></div>
+
+<!-- r6 -->
+<div class="n C" id="n6" style="grid-column:2;grid-row:6"><span class="no">6</span><span class="tag">Code</span><span class="lvl L1">L1</span><span class="lvl L3">L3</span>
+ <b class="t">Build options A–E</b>
+ <div class="k"><i>Reads:</i> <span class="d">bus_rates.json</span> <span class="d">restaurants.json</span> <span class="d">flight_fares.json</span></div>
+ <ul><li><b>A</b> day trip · <b>B</b> lowest-rate usable hotel · <b>C</b> closest usable hotel</li><li><b>D</b> flight if ≥ 400 mi and a fare exists · <b>E</b> 2 nights if a same-night return breaks "home by"</li><li>Each: timeline, bus, lodging, meals (team meal or per diem), extras, total</li></ul>
+ <div class="out">→ 2–5 priced options with timelines</div></div>
+
+<!-- r7 -->
+<div class="n C" id="n7" style="grid-column:2;grid-row:7"><span class="no">7</span><span class="tag">Code</span><span class="lvl L3">L3</span>
+ <b class="t">Check every option</b>
+ <ul><li><b>Team rules:</b> depart no earlier than · game-day travel ≤ N hrs · pregame meal N hrs before · check-in by · home by</li>
+ <li><b>Example policy values (confirm with BGSU Travel Services):</b> overnight only &gt; 50 mi and needed · per diem only for meals not provided · hotel ≤ $140 · flights bought 30+ days ahead</li>
+ <li><b>Budget:</b> under / over, by how much</li></ul></div>
+
+<!-- r8 -->
+<div class="n C" id="n8" style="grid-column:2;grid-row:8"><span class="no">8</span><span class="tag">Code</span><span class="lvl L1">L1</span>
+ <b class="t">Rank + label</b>
+ <div class="k"><i>Does:</i> sorts by (rules broken + policy issues), then total cost</div>
+ <div class="out">Labels: best within budget · best fit to rules<br>Lakeview: A $3,265 (breaks 2) · B $6,567.20 (keeps all) · C $7,607.20</div></div>
+<div class="n A" id="a2" style="grid-column:3;grid-row:8"><span class="no">A2</span><span class="tag">Aivana · structured output</span><span class="lvl L1">L1</span>
+ <b class="t">Recommend + explain tradeoffs</b>
+ <div class="k"><i>Sees:</i> only the computed option summaries, check results and labels</div>
+ <ul><li>option_id from an enum of the real option IDs</li><li>Explains tradeoffs by option ID</li><li>Cached when the options are unchanged</li></ul>
+ <div class="out">→ pick + explanation</div></div>
+
+<!-- r9 -->
+<div class="n S" id="n10" style="grid-column:1;grid-row:9"><span class="no">10</span><span class="tag">Staff</span><span class="lvl L2">L2</span><span class="lvl L3">L3</span>
+ <b class="t">Review options</b>
+ <div class="k">Reads the option cards, checks and recommendation. Asks or changes things in plain words:</div>
+ <ul><li>"Why is B over budget?"</li><li>"Leave 2 players home, coaches two to a room"</li><li>"Leave Saturday at 3 PM" · "Switch to Stadium Suites"</li></ul>
+ <div class="out">Changes so far: log + undo</div></div>
+<div class="n C" id="n9" style="grid-column:2;grid-row:9"><span class="no">9</span><span class="tag">Code</span><span class="lvl L3">L3</span>
+ <b class="t">Fact check the AI text</b>
+ <div class="k"><i>Compares</i> Aivana's text with the computed plan:</div>
+ <ul><li>every $ amount · every clock time</li><li>every option ID · "keeps / breaks N rules" claims</li></ul>
+ <div class="out">Anything that doesn't match → flagged "unverified"</div></div>
+
+<!-- r10 -->
+<div class="n A" id="a3" style="grid-column:3;grid-row:10"><span class="no">A3</span><span class="tag">Aivana · multi-turn chat + structured output</span><span class="lvl L2">L2</span>
+ <b class="t">Review assistant</b>
+ <div class="k"><i>Sees:</i> last 8 messages + the change log + option summaries</div>
+ <ul><li>Answers questions from the computed options</li><li>Turns requests into edits — never computes results</li><li>Can never approve anything</li></ul>
+ <div class="out">→ answer + edits {field, op, value}</div></div>
+
+<!-- r11 -->
+<div class="n S" id="n12" style="grid-column:1;grid-row:11"><span class="no">12</span><span class="tag">Staff</span><span class="lvl L3">L3</span>
+ <b class="t">Choose one option; pick hotel + meals</b>
+ <div class="k">Full hotel and restaurant lists, with rate, bus-parking fee, meeting room, price per person. Unusable ones are greyed out with the reason.</div>
+ <div class="out">→ custom choices (validated, then repriced)</div></div>
+<div class="n C" id="n11" style="grid-column:2;grid-row:11"><span class="no">11</span><span class="tag">Code</span><span class="lvl L2">L2</span><span class="lvl L3">L3</span>
+ <b class="t">Apply edits + log</b>
+ <ul><li>Only allowed fields; values range-checked; unknown edits rejected</li><li>Records each change with its effect, e.g. B $6,567.20 → $5,925.60</li><li>Then recomputes from step 4</li></ul></div>
+
+<!-- r12 -->
+<div class="n S" id="n13" style="grid-column:1;grid-row:12"><span class="no">13</span><span class="tag">Staff</span><span class="lvl L3">L3</span>
+ <b class="t">Approve</b>
+ <ul><li>Choose an approver role (Head Coach, Dir. of Operations…)</li><li>Tick each broken rule, policy issue and budget overrun as accepted</li><li>Optional note</li></ul></div>
+<div class="n G" id="g1" style="grid-column:2;grid-row:12"><span class="no">✓</span><span class="tag">Code · hard gate</span><span class="lvl L3">L3</span>
+ <b class="t">Approval gate</b>
+ <ul><li>Every required issue ticked?</li><li>Server stores a SHA-256 fingerprint of request + settings + choices + option</li><li>Final plan, memo, .ics, actuals: 403 before approval · 409 if anything changed after</li></ul></div>
+
+<!-- r13 -->
+<div class="n C" id="n14" style="grid-column:2;grid-row:13"><span class="no">14</span><span class="tag">Code</span><span class="lvl L3">L3</span>
+ <b class="t">Final trip plan</b>
+ <div class="k"><i>Reads:</i> <span class="d">roster.json</span></div>
+ <ul><li>Schedule, costs, accepted issues, approval line</li><li>Rooming list (injured players left out)</li><li>Calendar file (.ics) · expense report due date (90 days)</li></ul></div>
+<div class="n A" id="a4" style="grid-column:3;grid-row:13"><span class="no">A4</span><span class="tag">Aivana · streaming</span><span class="lvl L2">L2</span>
+ <b class="t">Stream the trip memo</b>
+ <ul><li>Only after approval; starts with the approval line</li><li>Uses only the approved plan's facts</li><li>Then fact-checked like step 9</li></ul>
+ <div class="out">→ memo for the team (.txt download)</div></div>
+
+<!-- r14 -->
+<div class="n S" id="n15" style="grid-column:1;grid-row:14"><span class="no">15</span><span class="tag">Staff</span><span class="lvl L3">L3</span>
+ <b class="t">After the trip</b>
+ <div class="k">Enter actual spend: transport, lodging, meals, extras. File one expense report per trip.</div></div>
+<div class="n C" id="n16" style="grid-column:2;grid-row:14"><span class="no">16</span><span class="tag">Code</span><span class="lvl L3">L3</span>
+ <b class="t">Budget vs actual</b>
+ <div class="k">Difference per category and against the trip budget.</div></div>
+</div>
+
+<div class="foot">
+ <div class="box"><h3>Why the AI can't make up numbers</h3><ul>
+  <li>Aivana never does the math: it gets computed facts and sends back IDs, fields and words</li>
+  <li>Enums limit its game and option IDs to real ones</li><li>Step 9 flags any $ amount, time, ID or rule claim it can't match</li><li>It can't approve: only the gate can unlock the final plan</li></ul></div>
+ <div class="box"><h3>Aivana features used</h3><ul>
+  <li><b>Structured output</b> (JSON Schema): A1, A2, A3</li><li><b>Multi-turn chat</b>: A3</li><li><b>Streaming</b>: A4</li>
+  <li>Bad JSON → retried once with the error message</li><li>Retries 429 / 502 / 504 honoring Retry-After · mock mode for offline demo</li></ul></div>
+ <div class="box"><h3>Token budget</h3><ul>
+  <li>Never sends data files or PDFs — only short summaries</li><li>Chat history capped at the last 8 messages</li>
+  <li>Same parse / recommend input → cached answer</li><li>Header shows calls + tokens per call type</li></ul></div>
+</div>
+<svg id="edges"></svg>
+</div>
+<script>
+const wrap=document.getElementById('wrap'),svg=document.getElementById('edges');
+const W=wrap.offsetWidth,H=wrap.offsetHeight;svg.setAttribute('width',W);svg.setAttribute('height',H);
+const ns='http://www.w3.org/2000/svg';
+svg.innerHTML=`<defs>${['#30343a','#c8501b','#1f7a4d','#3d3aa8','#9a1c1c'].map((c,i)=>`<marker id="m${i}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`).join('')}</defs>`;
+const cols={'#30343a':0,'#c8501b':1,'#1f7a4d':2,'#3d3aa8':3,'#9a1c1c':4};
+function R(id){const r=document.getElementById(id).getBoundingClientRect(),w=wrap.getBoundingClientRect();return{l:r.left-w.left,r:r.right-w.left,t:r.top-w.top,b:r.bottom-w.top,cx:(r.left+r.right)/2-w.left,cy:(r.top+r.bottom)/2-w.top,h:r.height,w:r.width}}
+function pt(id,side,f=.5){const r=R(id);const v=f>1?f:r.h*f,u=f>1?f:r.w*f;return side=='t'?[r.l+u,r.t]:side=='b'?[r.l+u,r.b]:side=='l'?[r.l,r.t+v]:[r.r,r.t+v]}
+function edge(a,as,b,bs,o={}){
+ const [x1,y1]=pt(a,as,o.af??.5),[x2,y2]=pt(b,bs,o.bf??.5);let d;
+ if(o.via!=null){d=`M${x1},${y1} H${o.via} V${y2} H${x2}`}
+ else if((as=='b'&&bs=='t')){const ym=o.ym??(y2-20);d=`M${x1},${y1} V${ym} H${x2} V${y2}`}
+ else if((as=='r'&&bs=='l')||(as=='l'&&bs=='r')){const xm=o.xm??(x1+x2)/2;d=`M${x1},${y1} H${xm} V${y2} H${x2}`}
+ else if((as=='l'||as=='r')&&bs=='t'){d=`M${x1},${y1} H${x2} V${y2}`}
+ else if(as=='b'&&(bs=='r'||bs=='l')){d=`M${x1},${y1} V${y2} H${x2}`}
+ const c=o.c||'#30343a',p=document.createElementNS(ns,'path');
+ p.setAttribute('d',d);p.setAttribute('fill','none');p.setAttribute('stroke',c);p.setAttribute('stroke-width',o.w||2);
+ if(o.dash)p.setAttribute('stroke-dasharray','7 5');p.setAttribute('marker-end',`url(#m${cols[c]})`);svg.appendChild(p);
+ if(o.label){const [lx,ly]=o.lp;const lines=o.label.split('\n');
+  const g=document.createElementNS(ns,'g');const wmax=Math.max(...lines.map(s=>s.length))*6.4+12,hh=lines.length*14+6;
+  const bg=document.createElementNS(ns,'rect');bg.setAttribute('x',lx-wmax/2);bg.setAttribute('y',ly-hh/2);bg.setAttribute('width',wmax);bg.setAttribute('height',hh);bg.setAttribute('rx',6);bg.setAttribute('fill','#fff');bg.setAttribute('stroke',c);bg.setAttribute('stroke-width',1);g.appendChild(bg);
+  lines.forEach((s,i)=>{const t=document.createElementNS(ns,'text');t.setAttribute('x',lx);t.setAttribute('y',ly-hh/2+15+i*14);t.setAttribute('text-anchor','middle');t.setAttribute('class','el');t.setAttribute('fill',c);t.textContent=s;g.appendChild(t)});
+  o.labels.push(g)}
+}
+const L=[];const gapL=R('n2').l-62;
+const mid=(a,b)=>(a+b)/2;
+// flow
+edge('n0','l','n1','t',{af:.35,c:'#1f7a4d',labels:L,label:'Plan this trip',lp:[mid(R('n1').cx,R('n0').l),R('n0').t+R('n0').h*.35]});
+edge('n1','r','a1','l',{af:60,bf:60,c:'#c8501b',labels:L,label:'free text',lp:[R('n2').cx,R('a1').t+60]});
+edge('a1','b','n2','r',{af:.5,bf:.25,c:'#3d3aa8',labels:L,label:'JSON fields',lp:[R('a1').cx,R('n2').t+R('n2').h*.25-0]});
+edge('n1','b','n3','t',{c:'#c8501b',labels:L,label:'form',lp:[R('n1').cx,mid(R('n1').b,R('n3').t)]});
+edge('n3','r','n2','l',{bf:60,af:60,c:'#c8501b',labels:L,label:'settings',lp:[mid(R('n3').r,R('n2').l),R('n3').t+44]});
+['n2','n4','n5','n6','n7'].forEach((a,i,arr)=>{const b=['n4','n5','n6','n7','n8'][i];edge(a,'b',b,'t',{c:'#1f7a4d'})});
+edge('n8','r','a2','l',{af:50,bf:50,c:'#1f7a4d',labels:L,label:'summaries only',lp:[mid(R('n8').r,R('a2').l),R('n8').t+34]});
+edge('a2','b','n9','r',{af:.5,bf:.3,c:'#3d3aa8',labels:L,label:'pick + explanation',lp:[R('a2').cx,R('n9').t+R('n9').h*.3]});
+edge('n9','l','n10','r',{af:50,bf:50,c:'#1f7a4d',labels:L,label:'checked text',lp:[mid(R('n10').r,R('n9').l),R('n9').t+34]});
+edge('n10','b','a3','t',{af:.75,ym:R('n10').b+20,c:'#c8501b',labels:L,label:'question / change request',lp:[R('a3').cx-30,R('n10').b+20]});
+edge('a3','b','n11','r',{af:.5,bf:.5,c:'#3d3aa8',labels:L,label:'edits {field, op, value}',lp:[R('a3').cx,R('n11').t+R('n11').h*.5]});
+edge('n11','l','n4','l',{af:.3,bf:.5,via:gapL,c:'#1f7a4d',dash:1,w:2.2,labels:L,label:'recompute ALL\noptions (loop)',lp:[gapL,R('n6').cy]});
+edge('n10','b','n12','t',{af:.3,ym:R('n12').t-18,c:'#c8501b',labels:L,label:'choose an option',lp:[R('n10').l+R('n10').w*.3,mid(R('n10').b,R('n12').t)+40]});
+edge('n12','r','n11','l',{af:70,bf:70,c:'#c8501b',dash:1,labels:L,label:'reprice',lp:[mid(R('n12').r,R('n11').l),R('n12').t+54]});
+edge('n12','b','n13','t',{c:'#c8501b'});
+edge('n13','r','g1','l',{af:50,bf:50,c:'#c8501b',labels:L,label:'role + ticks',lp:[mid(R('n13').r,R('g1').l),R('n13').t+34]});
+edge('n11','b','g1','t',{c:'#9a1c1c',dash:1,labels:L,label:'any change after approval → voids it (409)',lp:[R('g1').cx+70,mid(R('n11').b,R('g1').t)]});
+edge('g1','b','n14','t',{c:'#30343a',w:2.6,labels:L,label:'only if fingerprint matches',lp:[R('g1').cx,mid(R('g1').b,R('n14').t)]});
+edge('n14','r','a4','l',{af:50,bf:50,c:'#1f7a4d',labels:L,label:'approved facts',lp:[mid(R('n14').r,R('a4').l),R('n14').t+34]});
+edge('n14','b','n16','t',{c:'#1f7a4d'});
+edge('n15','r','n16','l',{af:45,bf:45,c:'#c8501b',labels:L,label:'actuals',lp:[mid(R('n15').r,R('n16').l),R('n15').t+29]});
+const topSvg=document.createElementNS(ns,'svg');topSvg.id='edges';topSvg.classList.add('front');topSvg.setAttribute("width",W);topSvg.setAttribute("height",H);topSvg.style.cssText='position:absolute;left:0;top:0;z-index:3';
+L.forEach(g=>topSvg.appendChild(g));wrap.appendChild(topSvg);
+</script></body></html>

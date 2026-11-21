@@ -1,0 +1,34 @@
+{
+ "note": "Synthetic benchmark seasons, made up for this demo (not real BGSU or NCAA figures). Used only to suggest a season budget. Trip prices in the app are synthetic too.",
+ "sport": "Men's soccer",
+ "source": {
+  "title": "Synthetic sample seasons (made up for this demo, not real records)",
+  "url": null,
+  "note": "The hackathon brief allows synthetic data only, so no real spending figures are used."
+ },
+ "definition_notes": [
+  "Both seasons are invented, sized for a 4-trip road schedule and a 22-player travel squad.",
+  "Team travel stands for buses, lodging and meals for regular-season away trips.",
+  "Replace this file with your own past figures, or delete it and enter the season budget by hand."
+ ],
+ "years": [
+  {
+   "fiscal_year": "Sample season A",
+   "season": "synthetic",
+   "team_travel": 30800,
+   "away_trips": 4,
+   "participants": 22,
+   "schedule_note": "Synthetic: 4 away trips, 1 overnight",
+   "schedule_source": ""
+  },
+  {
+   "fiscal_year": "Sample season B",
+   "season": "synthetic",
+   "team_travel": 33440,
+   "away_trips": 4,
+   "participants": 22,
+   "schedule_note": "Synthetic: 4 away trips, 2 overnights",
+   "schedule_source": ""
+  }
+ ]
+}

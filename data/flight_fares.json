@@ -1,0 +1,14 @@
+{
+ "note": "Synthetic commercial group fares (soccer teams typically fly commercial). Only offered when the match is at least flight_min_miles away.",
+ "fares": [
+  {
+   "game_id": "G09",
+   "carrier": "Great Lakes Air (group fare)",
+   "fare_per_seat": 260,
+   "flight_hours": 1.6,
+   "airport_buffer_hours": 2.0,
+   "transfer_hours": 0.7,
+   "local_bus_per_day": 650
+  }
+ ]
+}

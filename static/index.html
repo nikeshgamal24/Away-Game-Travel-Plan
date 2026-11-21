@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BGSU Away-Game Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-name">BGSU Away-Game Planner</span>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" data-tab="season" id="tabbtn-season">Season</button>
+    <button role="tab" data-tab="plan" id="tabbtn-plan">Plan a trip</button>
+    <button role="tab" data-tab="settings" id="tabbtn-settings">Settings</button>
+  </nav>
+  <div class="top-right">
+    <span id="ai-status" class="ai-status hidden" role="status" aria-live="polite"><span class="ai-dot" aria-hidden="true"></span><span id="ai-status-text">Aivana is working…</span></span>
+    <span id="mode-badge" class="badge hidden" title="No Aivana key: answers come from the offline mock">Mock mode</span>
+    <span id="usage" class="usage"></span>
+    <button id="btn-new" class="btn-quiet">New trip</button>
+  </div>
+  <div class="ai-bar" aria-hidden="true"></div>
+</header>
+
+<div id="error" class="banner error hidden" role="alert"></div>
+
+<main>
+  <!-- ============================== SEASON ============================== -->
+  <section class="tab-panel" id="tab-season" role="tabpanel" aria-labelledby="tabbtn-season">
+    <div class="panel-head">
+      <h1>Season</h1>
+      <label class="budget-field">Season budget <span class="money-input"><span>$</span><input id="season-budget" type="number" min="0" step="1000"></span></label>
+    </div>
+    <div id="season-plan" class="season-plan"></div>
+    <ol id="season-table" class="fixtures"></ol>
+    <div class="row">
+      <button id="btn-season-explain" class="btn">Explain with Aivana</button>
+    </div>
+    <div id="season-explain"></div>
+    <div class="more">
+      <details id="season-changes-box"><summary>What changed</summary><div id="season-changes"></div></details>
+      <details><summary>Hotels</summary><div id="season-hotels"></div></details>
+      <details><summary>Benchmarks</summary><div id="bench" class="bench"></div></details>
+      <details><summary>How this is picked</summary><p id="season-method" class="small muted"></p><p id="season-totals" class="small muted"></p></details>
+    </div>
+  </section>
+
+  <!-- ============================== PLAN A TRIP ============================== -->
+  <section class="tab-panel" id="tab-plan" role="tabpanel" aria-labelledby="tabbtn-plan">
+    <nav class="stepper" aria-label="Steps">
+      <button data-step="1"><span class="n">1</span>Request</button>
+      <button data-step="2"><span class="n">2</span>Compare</button>
+      <button data-step="3"><span class="n">3</span>Review &amp; approve</button>
+      <button data-step="4"><span class="n">4</span>Trip plan</button>
+    </nav>
+
+    <!-- STEP 1 -->
+    <section class="step-panel" id="step1">
+      <h2>Where is the team going?</h2>
+      <div id="restored" class="note hidden"></div>
+      <label class="field-label" for="freetext">Describe the trip</label>
+      <p id="freetext-help" class="small muted help">Include the game (opponent or day), how many players, coaches and staff, the budget, and the earliest you can leave.</p>
+      <textarea id="freetext" rows="3" aria-describedby="freetext-help freetext-privacy"
+        placeholder="e.g. Sunday at Lakeview State. 22 players, 4 coaches, 3 staff. We train until noon Saturday. Budget is $6,000."></textarea>
+      <p id="freetext-privacy" class="small muted help">Counts and times only: no names, injuries or health details, or student IDs. This text is sent to Aivana. Check every field below before comparing.</p>
+      <div class="row">
+        <button id="btn-parse" class="btn">Fill the form with Aivana</button>
+        <button id="btn-example" class="btn link" type="button">Use an example</button>
+        <span class="small muted">or fill in the form yourself</span>
+      </div>
+      <div id="parse-notes" class="note hidden"></div>
+
+      <div class="grid form">
+        <label class="wide">Game<select id="f-game"></select></label>
+        <label>Players<input id="f-players" type="number" min="1"></label>
+        <label>Coaches<input id="f-coaches" type="number" min="0"></label>
+        <label>Staff<input id="f-staff" type="number" min="0"></label>
+        <label>Budget ($)<input id="f-budget" type="number" min="1" step="any"></label>
+        <label class="wide">Leave no earlier than<input id="f-depart" type="datetime-local"></label>
+      </div>
+      <p class="rules-line"><span id="rules-summary"></span> <a href="#settings" data-goto-tab="settings">Edit rules</a></p>
+
+      <div class="row">
+        <button id="btn-compare" class="btn primary">Compare options</button>
+        <span id="form-errors" class="err small"></span>
+      </div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="step-panel" id="step2">
+      <div class="step-head">
+        <h2 id="trip-title">Compare options</h2>
+        <button class="btn" data-open-chat>Ask Aivana or change something</button>
+      </div>
+      <p id="trip-summary" class="small muted"></p>
+      <div id="plan-notes"></div>
+
+      <div class="rec" id="rec">
+        <div id="rec-body"></div>
+      </div>
+      <div id="options" class="options"></div>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="step-panel" id="step3">
+      <div class="step-head">
+        <h2 id="plan-title"></h2>
+        <button class="btn" data-open-chat>Ask Aivana or change something</button>
+      </div>
+      <div class="two">
+        <div>
+          <h3>Schedule</h3>
+          <ol id="timeline" class="timeline"></ol>
+        </div>
+        <div>
+          <h3>Cost</h3>
+          <table id="cost-table" class="tbl cost"></table>
+          <h3>Rules</h3>
+          <ul id="plan-rules" class="checks"></ul>
+          <ul id="plan-policy" class="checks"></ul>
+          <details class="inline-more"><summary>Notes</summary><ul id="plan-flags" class="flags"></ul></details>
+        </div>
+      </div>
+
+      <details class="pickers-box">
+        <summary>Change the hotel or restaurants</summary>
+        <div id="hotel-pick-wrap">
+          <h3>Hotel</h3>
+          <div class="table-wrap"><table id="hotel-pick" class="tbl pick"></table></div>
+          <div class="row">
+            <button id="btn-web-search" class="btn">Find hotels on the web</button>
+            <button id="btn-which-hotel" class="btn">Which hotel?</button>
+          </div>
+          <div id="web-results"></div>
+          <div id="web-confirm"></div>
+          <div id="which-hotel"></div>
+        </div>
+        <h3>Meals</h3>
+        <div class="table-wrap"><table id="meal-pick" class="tbl pick"></table></div>
+      </details>
+
+      <div class="approve" id="approve-box">
+        <h3>Approve</h3>
+        <div id="approve-status"></div>
+        <div id="approve-form">
+          <p class="small muted">Any later change cancels the approval.</p>
+          <div id="acks"></div>
+          <div class="grid form">
+            <label>Approved by<select id="approve-role"></select></label>
+            <label class="wide">Note (optional)<input id="approve-note" maxlength="300" placeholder="e.g. AD agreed to cover the overage"></label>
+          </div>
+          <button id="btn-approve" class="btn primary">Approve trip</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 4 -->
+    <section class="step-panel" id="step4">
+      <div id="approval-banner" class="approved"></div>
+
+      <h3>Trip memo</h3>
+      <div class="row">
+        <button id="btn-memo" class="btn primary">Write memo with Aivana</button>
+        <button id="btn-pdf" class="btn" disabled>Download PDF</button>
+        <button id="btn-dl-memo" class="btn" disabled>Download .txt</button>
+        <button id="btn-ics" class="btn">Add to calendar (.ics)</button>
+      </div>
+      <pre id="memo" class="memo hidden"></pre>
+      <div id="memo-check" class="small"></div>
+
+      <div id="rooming-wrap">
+        <h3>Rooming list <span class="small muted">active players only</span></h3>
+        <div id="rooming" class="rooming"></div>
+      </div>
+
+      <details class="inline-more"><summary>Expense report</summary><ul id="expense-notes" class="small"></ul></details>
+      <details class="inline-more">
+        <summary>Budget vs actual (after the trip)</summary>
+        <div class="grid form">
+          <label>Transport ($)<input id="a-transport" type="number" min="0"></label>
+          <label>Lodging ($)<input id="a-lodging" type="number" min="0"></label>
+          <label>Meals ($)<input id="a-meals" type="number" min="0"></label>
+          <label>Extras ($)<input id="a-extras" type="number" min="0"></label>
+        </div>
+        <button id="btn-actuals" class="btn">Compare to estimate</button>
+        <div id="actuals"></div>
+      </details>
+    </section>
+  </section>
+
+  <!-- ============================== SETTINGS ============================== -->
+  <section class="tab-panel" id="tab-settings" role="tabpanel" aria-labelledby="tabbtn-settings">
+    <div class="panel-head">
+      <h1>Settings</h1>
+      <button id="btn-reset-settings" class="btn">Reset to defaults</button>
+    </div>
+    <div id="settings-box">
+      <section class="set-group"><h2>Team rules</h2><p class="small muted">Every option is checked against these. Set how much each one matters.</p><div class="set-rows" id="grp-rules"></div></section>
+      <section class="set-group"><h2>Travel policy (examples)</h2><p class="small muted">These are example values, not BGSU's current policy. Confirm each with BGSU Travel Services.</p><div class="set-rows" id="grp-policy"></div></section>
+      <section class="set-group"><h2>Costs</h2><p class="small muted">Used to price every option.</p><div class="grid form" id="grp-costs"></div></section>
+      <section class="set-group"><h2>Extras</h2><p class="small muted">Supplies that aren't in the data pack.</p><div class="grid form" id="grp-extras"></div></section>
+      <section class="set-group"><h2>Assumptions</h2><p class="small muted">Planning defaults. Change them if your team differs.</p><div class="grid form" id="grp-assumptions"></div></section>
+    </div>
+  </section>
+</main>
+
+<!-- Chat drawer -->
+<aside id="chat-drawer" class="drawer" aria-label="Chat with Aivana" aria-hidden="true">
+  <div class="drawer-head">
+    <strong>Ask Aivana</strong>
+    <button id="btn-close-chat" class="btn-quiet" aria-label="Close chat">Close</button>
+  </div>
+  <div id="chat-log" class="chat-log"></div>
+  <div class="chips" id="chat-chips">
+    <button type="button" class="chip">Leave 4 players home</button>
+    <button type="button" class="chip">Why is B over budget?</button>
+    <button type="button" class="chip">Leave Friday at 3 PM</button>
+  </div>
+  <form id="chat-form" class="chat-form">
+    <input id="chat-input" placeholder="Ask a question or make a change" autocomplete="off">
+    <button type="submit" class="btn primary">Send</button>
+  </form>
+  <details class="changelog">
+    <summary>Changes so far <span id="change-count" class="muted"></span></summary>
+    <ol id="change-log" class="change-log"></ol>
+    <button id="btn-undo" class="btn" disabled>Undo last change</button>
+  </details>
+</aside>
+<div id="drawer-scrim" class="scrim hidden"></div>
+
+<footer class="small muted" id="disclaimer">Synthetic data. Costs are estimates. Aivana's answers are advisory; staff approve.</footer>
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+{
+ "note": "Synthetic restaurants. Price is per person per meal.",
+ "restaurants": [
+  {
+   "restaurant_id": "R1",
+   "city": "Lakeview",
+   "name": "Ridgeline Grill",
+   "meal_types": [
+    "lunch",
+    "dinner"
+   ],
+   "price_per_person": 18,
+   "miles_to_stadium": 5.0,
+   "group_max": 80
+  },
+  {
+   "restaurant_id": "R2",
+   "city": "Lakeview",
+   "name": "Campus Corner Diner",
+   "meal_types": [
+    "breakfast",
+    "lunch"
+   ],
+   "price_per_person": 14,
+   "miles_to_stadium": 2.0,
+   "group_max": 40
+  },
+  {
+   "restaurant_id": "R3",
+   "city": "Lakeview",
+   "name": "Lakeshore Banquet Hall",
+   "meal_types": [
+    "lunch",
+    "dinner"
+   ],
+   "price_per_person": 24,
+   "miles_to_stadium": 3.0,
+   "group_max": 150
+  },
+  {
+   "restaurant_id": "R4",
+   "city": "Riverbend",
+   "name": "Mill Street Kitchen",
+   "meal_types": [
+    "breakfast",
+    "lunch",
+    "dinner"
+   ],
+   "price_per_person": 16,
+   "miles_to_stadium": 2.5,
+   "group_max": 90
+  },
+  {
+   "restaurant_id": "R5",
+   "city": "Harbor City",
+   "name": "Pier 9 Buffet",
+   "meal_types": [
+    "breakfast",
+    "lunch",
+    "dinner"
+   ],
+   "price_per_person": 20,
+   "miles_to_stadium": 4.0,
+   "group_max": 120
+  },
+  {
+   "restaurant_id": "R6",
+   "city": "Harbor City",
+   "name": "Dockside Deli",
+   "meal_types": [
+    "lunch"
+   ],
+   "price_per_person": 13,
+   "miles_to_stadium": 1.0,
+   "group_max": 30
+  },
+  {
+   "restaurant_id": "R7",
+   "city": "Maple Ridge",
+   "name": "Ridgeway Family Kitchen",
+   "meal_types": [
+    "lunch",
+    "dinner"
+   ],
+   "price_per_person": 16,
+   "miles_to_stadium": 1.5,
+   "group_max": 90
+  }
+ ]
+}

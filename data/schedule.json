@@ -1,0 +1,62 @@
+{
+ "note": "Synthetic BGSU men's soccer road schedule (fictional opponents, cities, distances and drive times). Miles are from the BGSU campus.",
+ "home": {
+  "name": "Bowling Green State University, Bowling Green, OH",
+  "short": "BGSU campus",
+  "team": "BGSU Falcons men's soccer"
+ },
+ "games": [
+  {
+   "game_id": "G06",
+   "opponent": "Maple Ridge College",
+   "city": "Maple Ridge",
+   "stadium": "Maple Ridge Soccer Complex",
+   "search_city": "Ann Arbor, Michigan",
+   "search_stadium": "U-M Soccer Stadium, University of Michigan",
+   "search_reference": "BGSU at Michigan, Sept. 1, 2025",
+   "date": "2027-09-08",
+   "kickoff": "19:00",
+   "miles": 38,
+   "drive_hours": 0.9
+  },
+  {
+   "game_id": "G07",
+   "opponent": "Lakeview State",
+   "city": "Lakeview",
+   "stadium": "Lakeview Soccer Park",
+   "search_city": "Chicago, Illinois",
+   "search_stadium": "Wish Field, DePaul University",
+   "search_reference": "BGSU at DePaul, Sept. 23, 2025",
+   "date": "2027-09-19",
+   "kickoff": "13:00",
+   "miles": 210,
+   "drive_hours": 4.0
+  },
+  {
+   "game_id": "G08",
+   "opponent": "Riverbend University",
+   "city": "Riverbend",
+   "stadium": "Riverbend Field",
+   "search_city": "Cleveland, Ohio",
+   "search_stadium": "Krenzler Field, Cleveland State University",
+   "search_reference": "BGSU at Cleveland State, Oct. 7, 2025",
+   "date": "2027-10-05",
+   "kickoff": "19:00",
+   "miles": 95,
+   "drive_hours": 2.0
+  },
+  {
+   "game_id": "G09",
+   "opponent": "Harbor City Tech",
+   "city": "Harbor City",
+   "stadium": "Harbor City Stadium",
+   "search_city": "Des Moines, Iowa",
+   "search_stadium": "Mediacom Stadium, Drake University",
+   "search_reference": "BGSU at Drake, Oct. 18, 2025",
+   "date": "2027-10-16",
+   "kickoff": "19:00",
+   "miles": 520,
+   "drive_hours": 9.5
+  }
+ ]
+}
